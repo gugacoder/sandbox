@@ -1,151 +1,3 @@
-/*
-  drop table if exists replica.texto
-  drop table if exists replica.evento
-  drop view if exists replica.vw_evento
-  drop function if exists replica.SPLIT
-  drop function if exists replica.SPLIT_PART
-  drop procedure if exists replica.clonar_tabela_mercadologic
-*/
-
---
--- SCHEMA replica
---
-if not exists (select 1 from sys.schemas where name = 'replica')
-  exec('create schema replica')
-go
-
---
--- TABLE replica.texto
---
-drop table if exists replica.texto
-go
-create table replica.texto (
-  cod_empresa int not null,
-  id int not null,
-  texto varchar(max) not null,
-  constraint PK_replica_texto
-     primary key (cod_empresa, id)
-)
-go
-
---
--- TABLE replica.evento
---
-drop table if exists replica.evento
-go
-create table replica.evento (
-  cod_empresa int not null,
-  id int not null,
-  id_esquema int not null,
-  id_tabela int not null,
-  chave int not null,
-  acao char(1) not null,
-  data datetime not null,
-  versao int not null,
-  id_origem int not null,
-  constraint PK_replica_evento
-     primary key (cod_empresa, id)
-)
-go
-
---
--- VIEW replica.vw_evento
---
-drop view if exists replica.vw_evento
-go
-create view replica.vw_evento as 
-select evento.cod_empresa
-     , evento.id
-     , esquema.texto as esquema
-     , tabela.texto as tabela
-     , evento.chave
-     , case evento.acao
-         when 'I' then 'INSERT'
-         when 'U' then 'UPDATE'
-         when 'D' then 'DELETE'
-         when 'T' then 'TRUNCATE'
-       end as acao
-     , evento.data
-     , evento.versao
-     , origem.texto as origem
-  from replica.evento
- inner join replica.texto as esquema on esquema.id = evento.id_esquema
- inner join replica.texto as tabela  on tabela .id = evento.id_tabela
- inner join replica.texto as origem  on origem .id = evento.id_origem
-go
-
---
--- FUNCTION replica.SPLIT
---
-drop function if exists replica.SPLIT  
-go
-create function replica.SPLIT(
-    @string nvarchar(max)
-  , @delimitador char(1))
-returns @itens table (indice int identity(1,1), valor nvarchar(max))
-as
-begin
-  if @string is null return
-
-  declare @indice int = 1
-  declare @fracao nvarchar(max)
-
-  while @indice != 0
-  begin
-    set @indice = charindex(@delimitador, @string)
-    if @indice != 0
-      set @fracao = left(@string, @indice - 1)
-    else
-      set @fracao = @string
-    
-    insert into @itens (valor) values (@fracao)
-
-    set @string = right(@string, len(@string) - @indice)
-    if len(@string) = 0
-      break
-  end
-  return
-end
-go
-
---
--- FUNCTION replica.SPLIT_PART
---
-drop function if exists replica.SPLIT_PART  
-go
-create function replica.SPLIT_PART(
-    @string nvarchar(max)
-  , @delimitador char(1)
-  , @posicao_desejada int)
-returns nvarchar(max)
-as
-begin
-  if @string is null return null
-
-  declare @posicao int = 0
-  declare @indice int = 1
-  declare @fracao nvarchar(max)
-
-  while @indice != 0
-  begin
-    set @indice = charindex(@delimitador, @string)
-    if @indice != 0
-      set @fracao = left(@string, @indice - 1)
-    else
-      set @fracao = @string
-    
-    if @posicao = @posicao_desejada
-      return @fracao
-
-    set @string = right(@string, len(@string) - @indice)
-    if len(@string) = 0
-      break
-
-    set @posicao = @posicao + 1
-  end
-  return null
-end
-go
 
 --
 -- PROCEDURE replica.clonar_tabela_mercadologic
@@ -155,7 +7,7 @@ if object_id('replica.clonar_tabela_mercadologic') is not null
 go
 create procedure replica.clonar_tabela_mercadologic (
     @cod_empresa int
-  , @tabela_mercadologic varchar(100)
+  , @tabela varchar(100)
 	, @provider nvarchar(50) = 'MSDASQL'
 	, @driver nvarchar(50) = '{PostgreSQL 64-Bit ODBC Drivers}'
 	, @servidor nvarchar(30) = null
@@ -178,12 +30,12 @@ begin
     posicao int
   )
 
-  if @tabela_mercadologic like '%.%' begin
-    set @esquema = replica.SPLIT_PART(@tabela_mercadologic, '.', 0)
-    set @tabela = replica.SPLIT_PART(@tabela_mercadologic, '.', 1)
+  if @tabela like '%.%' begin
+    set @esquema = replica.SPLIT_PART(@tabela, '.', 0)
+    set @tabela = replica.SPLIT_PART(@tabela, '.', 1)
   end else begin
     set @esquema = 'public'
-    set @tabela = @tabela_mercadologic
+    set @tabela = @tabela
   end
 
   if @esquema = 'public' begin
@@ -209,6 +61,11 @@ begin
 
   insert into @tb_campo (nome, tipo_pgsql, tamanho, aceita_nulo, posicao)
   exec sp_executesql @sql
+
+  if not exists(select 1 from @tb_campo) begin
+    raiserror(N'A TABELA NÃO FOI ENCONTRADA NA BASE DO MERCADOLOGIC: %s.%s',10,1,@esquema,@tabela) with nowait
+    return
+  end
 
   ; with tipo as (
     select * from ( values 
@@ -270,3 +127,11 @@ begin
   raiserror(N'TABELA DE RÉPLICA ATUALIZADA: %s',10,1,@tabela_replica) with nowait
 end
 go
+
+declare @servidor varchar(100), @database varchar(100)
+ select @servidor = DFservidor, @database = DFdatabase
+   from DBdirector_MAC_29.dbo.TBempresa_mercadologic where DFcod_empresa = 7
+
+--drop table if exists replica.caixa
+exec replica.clonar_tabela_mercadologic 7, 'usuario', @servidor, @database
+
