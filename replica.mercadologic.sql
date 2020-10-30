@@ -1,15 +1,20 @@
-drop table if exists replica.texto cascade;
-drop table if exists replica.evento cascade;
-drop view if exists replica.vw_evento cascade;
-
+--
+-- SCHEMA replica
+--
 create schema if not exists replica;
 
-create table replica.texto (
+--
+-- TABELA replica.texto
+--
+create table if not exists replica.texto (
   id serial not null primary key,
   texto varchar not null,
   constraint uq_texto unique (texto)
 );
 
+--
+-- TABELA replica.evento
+--
 create table if not exists replica.evento (
   id serial not null primary key,
   id_esquema int not null,
@@ -20,8 +25,12 @@ create table if not exists replica.evento (
   versao xid not null,
   id_origem int not null
 );
+create index if not exists ix_evento_tabela on replica.evento (id_esquema,id_tabela);
 
-create view replica.vw_evento as 
+--
+-- VIEW replica.vw_evento
+--
+create or replace view replica.vw_evento as 
 select evento.id
      , esquema.texto as esquema
      , tabela.texto as tabela
@@ -40,10 +49,24 @@ select evento.id
  inner join replica.texto as tabela  on tabela .id = evento.id_tabela
  inner join replica.texto as origem  on origem .id = evento.id_origem;
 
-create or replace function replica.fn_registrar_evento()
+--
+-- VIEW replica.vw_tabela_monitorada
+--
+create or replace view replica.vw_tabela_monitorada as 
+select distinct 
+       esquema.texto as esquema
+     , tabela.texto as tabela
+  from replica.evento
+ inner join replica.texto as esquema on esquema.id = evento.id_esquema
+ inner join replica.texto as tabela  on tabela .id = evento.id_tabela;
+
+--
+-- FUNCTION replica.registrar_evento
+--
+create or replace function replica.registrar_evento()
 returns trigger as $$
 begin
-  RAISE NOTICE '% EM %.% DISPARADO POR %', TG_OP, TG_TABLE_SCHEMA, TG_TABLE_NAME, TG_NAME;
+  RAISE NOTICE '%: % EM %.% MARCADO PARA REPLICACAO', TG_NAME, TG_OP, TG_TABLE_SCHEMA, TG_TABLE_NAME;
   insert into replica.texto (texto)
   values (TG_TABLE_SCHEMA)
        , (TG_TABLE_NAME)
@@ -75,7 +98,10 @@ begin
 end
 $$ language plpgsql;
 
-create or replace function replica.fg_monitorar_tabela(tabela varchar)
+--
+-- FUNCTION replica.monitorar_tabela
+--
+create or replace function replica.monitorar_tabela(tabela varchar)
 returns varchar as $$
 declare
   esquema varchar;
@@ -92,28 +118,18 @@ begin
     after insert or update or delete
     on ' || esquema || '.' || tabela || '
     for each row
-    execute procedure replica.fn_registrar_evento();'
+    execute procedure replica.registrar_evento();'
       using tabela;
   return
     'TRIGGER `tg_' || tabela || ''' ' ||
-    'ANEXADA À TABELA `' || esquema || '.' || tabela || ''' ' ||
+    'ANEXADA A TABELA `' || esquema || '.' || tabela || ''' ' ||
     'PARA MONITORAMENTO DE EVENTOS.';
 end;
 $$ language plpgsql;
 
---
--- Tabela para estudos...
---
-drop table if exists teste;
-create table teste (
-  id serial not null primary key,
-  texto varchar(100) not null,
-  preco decimal default 0 not null,
-  data timestamp default current_timestamp not null
-);
-
-select replica.fg_monitorar_tabela('teste');
-
-insert into teste (texto, preco, data) values ('exemplo', 2.85, current_timestamp);
-
-select * from replica.vw_evento
+-- exemplo:
+-- insert into teste (texto, preco, data) values ('exemplo', 2.85, current_timestamp);
+-- 
+-- select * from replica.vw_evento
+-- select * from cupomfiscal order by 1 desc limit 10
+-- update cupomfiscal set codigo = 144 where id = 517053

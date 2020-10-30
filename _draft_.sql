@@ -1,4 +1,3 @@
-
 --
 -- PROCEDURE replica.clonar_tabela_mercadologic
 --
@@ -7,7 +6,7 @@ if object_id('replica.clonar_tabela_mercadologic') is not null
 go
 create procedure replica.clonar_tabela_mercadologic (
     @cod_empresa int
-  , @tabela varchar(100)
+  , @tabela_mercadologic varchar(100)
 	, @provider nvarchar(50) = 'MSDASQL'
 	, @driver nvarchar(50) = '{PostgreSQL 64-Bit ODBC Drivers}'
 	, @servidor nvarchar(30) = null
@@ -30,12 +29,12 @@ begin
     posicao int
   )
 
-  if @tabela like '%.%' begin
-    set @esquema = replica.SPLIT_PART(@tabela, '.', 0)
-    set @tabela = replica.SPLIT_PART(@tabela, '.', 1)
+  if @tabela_mercadologic like '%.%' begin
+    set @esquema = replica.SPLIT_PART(@tabela_mercadologic, '.', 0)
+    set @tabela = replica.SPLIT_PART(@tabela_mercadologic, '.', 1)
   end else begin
     set @esquema = 'public'
-    set @tabela = @tabela
+    set @tabela = @tabela_mercadologic
   end
 
   if @esquema = 'public' begin
@@ -61,11 +60,6 @@ begin
 
   insert into @tb_campo (nome, tipo_pgsql, tamanho, aceita_nulo, posicao)
   exec sp_executesql @sql
-
-  if not exists(select 1 from @tb_campo) begin
-    raiserror(N'A TABELA NÃO FOI ENCONTRADA NA BASE DO MERCADOLOGIC: %s.%s',10,1,@esquema,@tabela) with nowait
-    return
-  end
 
   ; with tipo as (
     select * from ( values 
@@ -127,11 +121,3 @@ begin
   raiserror(N'TABELA DE RÉPLICA ATUALIZADA: %s',10,1,@tabela_replica) with nowait
 end
 go
-
-declare @servidor varchar(100), @database varchar(100)
- select @servidor = DFservidor, @database = DFdatabase
-   from DBdirector_MAC_29.dbo.TBempresa_mercadologic where DFcod_empresa = 7
-
---drop table if exists replica.caixa
-exec replica.clonar_tabela_mercadologic 7, 'usuario', @servidor, @database
-

@@ -150,8 +150,7 @@ go
 --
 -- PROCEDURE replica.clonar_tabela_mercadologic
 --
-if object_id('replica.clonar_tabela_mercadologic') is not null
-  drop procedure replica.clonar_tabela_mercadologic
+drop procedure if exists replica.clonar_tabela_mercadologic
 go
 create procedure replica.clonar_tabela_mercadologic (
     @cod_empresa int
