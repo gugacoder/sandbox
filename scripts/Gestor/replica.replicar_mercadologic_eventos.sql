@@ -1,9 +1,9 @@
 --
 -- PROCEDURE replica.replicar_eventos_mercadologic
 --
-drop procedure if exists replica.replicar_eventos_mercadologic
+drop procedure if exists replica.replicar_mercadologic_eventos
 go
-create procedure replica.replicar_eventos_mercadologic (
+create procedure replica.replicar_mercadologic_eventos (
     @cod_empresa int
   -- Parâmetros opcionais de conectividade.
   -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
@@ -131,7 +131,3 @@ begin
   raiserror(N'EVENTOS DO CONCENTRADOR REGISTRADOS NO GESTOR.',10,1) with nowait
 end
 go
-
-exec replica.replicar_eventos_mercadologic 7
-select top 10 * from replica.vw_evento order by 1 desc
--- delete from replica.evento

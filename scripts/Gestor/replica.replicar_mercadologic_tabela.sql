@@ -1,9 +1,9 @@
 --
--- PROCEDURE replica.replicar_tabela_mercadologic
+-- PROCEDURE replica.replicar_mercadologic_tabela
 --
-drop procedure if exists replica.replicar_tabela_mercadologic
+drop procedure if exists replica.replicar_mercadologic_tabela
 go
-create procedure replica.replicar_tabela_mercadologic (
+create procedure replica.replicar_mercadologic_tabela (
     @cod_empresa int
   , @tabela_mercadologic varchar(100)
   , @chave_tabela_mercadologic int
@@ -117,8 +117,6 @@ begin
     @tabela_replica,@campo_id,@chave_tabela_mercadologic) with nowait
 end
 go
-
-exec replica.replicar_tabela_mercadologic 7, 'cupomfiscal', 517057
 
 
 
