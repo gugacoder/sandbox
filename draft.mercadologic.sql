@@ -1,4 +1,10 @@
-
-
-select distinct esquema, tabela from replica.vw_evento
-select esquema, tabela from replica.vw_tabela_monitorada;
+select id
+     , esquema
+     , tabela
+     , chave
+     , acao
+     , data
+     , versao
+     , origem
+  from replica.vw_evento
+ limit 10

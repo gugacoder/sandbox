@@ -5,6 +5,7 @@ drop view if exists replica.vw_evento
 go
 create view replica.vw_evento as 
 select evento.cod_empresa
+     , evento.replicado
      , evento.id
      , esquema.texto as esquema
      , tabela.texto as tabela

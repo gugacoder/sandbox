@@ -4,6 +4,9 @@
 if object_id('replica.evento') is null
   create table replica.evento (
     cod_empresa int not null,
+    replicado bit not null
+      constraint DF__replica_evento__replicado
+         default 0,
     id int not null,
     id_esquema int not null
       constraint FK__replica_evento__replica_texto__esquema
@@ -21,6 +24,10 @@ if object_id('replica.evento') is null
     constraint PK_replica_evento
        primary key (cod_empresa, id)
   )
+go
+
+if not exists(select 1 from sys.indexes where name = 'IX_replica_evento_replicado')
+  create index IX_replica_evento_replicado on replica.evento (replicado)
 go
 
 if not exists(select 1 from sys.indexes where name = 'IX_replica_evento_esquema')
