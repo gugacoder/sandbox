@@ -1,0 +1,96 @@
+#
+# Definição do pacote
+#
+
+# Identificador do pacote.
+#   Em geral o artefato será membro de um destes grupos:
+#   - Processa, para artefatos criados pela Processa
+#   - 3rd-party, para artefatos de terceiros
+#   Use nomes em PascalCase.
+#   O número da versão seguem o formato:
+#   - major.minor.patch
+#   conforme definido pelo `semver`
+#   A última parte, `patch`, é comumente omitida e definida
+#   no ato do empacotamento da distribuição pelo comando
+#     pack build --set-version x.x.0
+#   Veja mais detalhes digitando:
+#     pack --help
+pack
+  Processa/ScriptPack-Mlogic.Gestor/1.0.0
+
+# Declaração das dependências do projeto.
+#   Uma dependência por linha.
+#   A versão pode ser definida em intervalos:
+#   - de um inicio a um fim
+#       Qualquer versão maior ou igual ao início e menor ou igual ao fim.
+#       Exemplos:
+#         Versão          Intervalo
+#         --------------  -------------------
+#         1 - 2           >= 1.0.0 e <= 2.0.0
+#         1.2 - 3.4       >= 1.2.0 e <= 3.4.0
+#         1.2.3 - 3.4.5   >= 1.2.3 e <= 3.4.5
+#   - igual, até ou a partir de
+#       Qualquer versão igual a indicada, até a indicada ou a partir da indicada,
+#       segundo os operadores:
+#         =   Igual à versão indicada.
+#         >   Maior que a versão indicada.
+#         <   Menor que a versão indicada.
+#         >=  Maior ou igual à versão indicada.
+#         <=  Menor ou igual à versão indicada.
+#       Exemplos:
+#         Versão          Intervalo
+#         --------------  -------------------
+#         =1              = 1.0.0
+#         =1.2            = 1.2.0
+#         =1.2.3          = 1.2.3
+#         >1              > 1.0.0
+#         >=1.2           >= 1.2.0
+#         <=1.2.3         <= 1.2.3
+#   - ^0.0.0
+#       Qualquer versão superior à versão declarada
+#       até a última versão do primeiro digito não zero.
+#       Exemplos:
+#         Versão          Intervalo
+#         --------------  -------------------
+#         ^1              >= 1.0.0 e < 2.0.0
+#         ^1.2            >= 1.2.0 e < 2.0.0
+#         ^1.2.3          >= 1.2.3 e < 2.0.0
+#         ^0.1.2          >= 0.1.2 e < 0.2.0
+#         ^0.0.1          >= 0.0.1 e < 0.0.2
+#   - ~0.0.0
+#       Qualquer versão compatível com a versão declarada.
+#       A compatibilidade é definida no nível do `patch`.
+#       Exemplos:
+#         Versão          Intervalo
+#         --------------  -------------------
+#         ~1              >= 1.0.0 e < 2.0.0
+#         ~1.2            >= 1.2.0 e < 1.3.0
+#         ~1.2.3          >= 1.2.3 e < 1.3.0
+#         ~0.1.2          >= 0.1.2 e < 0.2.0
+#         ~0.0.1          >= 0.0.1 e < 0.1.0
+deps
+  # Pacote/Artefato/Versao
+  
+# Relação dos artefatos que devem ser empacotados e publicados.
+# Os caminhos são relativos à pasta de distribuição `Dist` ou àquela
+# definida nas configurações ou na linha de comando.
+# Curingas:
+#   `*`  pode ser usado para indicar qualquer quantidade de caracter
+#        na posição.
+#   `**` pode ser usado para indicar pastas e subpastas.
+# Exemplos de empacotamentos:
+# Todos os arquivos da pasta, não considerando subpastas:
+#   dist
+#     *
+# Todos os arquivos da pasta e das subpastas:
+#   dist
+#     **
+# Todos os arquivos das subpastas, não considerando a própria pasta:
+#   dist
+#     */**
+# Todos os executáveis e todas as DLLs da pasta e subpastas:
+#   dist
+#     **/*.exe
+#     **/*.dll
+dist
+  **

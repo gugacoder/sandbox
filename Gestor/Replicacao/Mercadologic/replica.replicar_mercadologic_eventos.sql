@@ -127,7 +127,6 @@ begin
           , evento_remoto.versao
           , evento_remoto.id_origem
         );
-
   raiserror(N'EVENTOS DO CONCENTRADOR REGISTRADOS NO GESTOR.',10,1) with nowait
 end
 go

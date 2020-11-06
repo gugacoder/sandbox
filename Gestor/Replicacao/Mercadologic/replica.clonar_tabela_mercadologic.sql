@@ -139,6 +139,11 @@ begin
 
   exec sp_executesql @sql
 
+  --
+  -- Garantindo a existência de uma view no DBdirector para acesso à esta tabela replicada
+  --
+  exec replica.mapear_view_director @cod_empresa, @tabela_mercadologic
+
   raiserror(N'TABELA DE RÉPLICA ATUALIZADA: %s',10,1,@tabela_replica) with nowait
 end
 go

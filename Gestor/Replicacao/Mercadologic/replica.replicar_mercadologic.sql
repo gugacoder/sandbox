@@ -36,6 +36,16 @@ begin
      where DFcod_empresa = @cod_empresa
   end
 
+  exec replica.clonar_tabelas_monitoradas_mercadologic
+       @cod_empresa
+     , @provider
+     , @driver
+     , @servidor
+     , @porta
+     , @database
+     , @usuario
+     , @senha
+
   exec replica.replicar_mercadologic_eventos
        @cod_empresa
      , @provider
@@ -56,6 +66,6 @@ begin
      , @usuario
      , @senha
 
-  raiserror(N'EVENTOS DO CONCENTRADOR REGISTRADOS NO GESTOR.',10,1) with nowait
+  raiserror(N'REPLICAÇÃO DO CONCENTRADOR NO GESTOR CONCLUÍDA.',10,1) with nowait
 end
 go

@@ -73,8 +73,6 @@ begin
 
     select @id = min(id) from @tb_tabela where id > @id
   end
-
-  raiserror(N'TABELAS DE REPLICAÇÃO ATUALIZADAS.',10,1) with nowait
 end
 go
 -- exec replica.clonar_tabelas_monitoradas_mercadologic 7

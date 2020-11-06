@@ -1,0 +1,17 @@
+#
+# Informações de geração do setup para migração dos scripts via migrant.exe
+#
+
+# Nome do módulo
+# Use apenas letras, números, pontos, sublinhas e hífens.
+module.name=Mlogic.Gestor
+
+# Título do módulo.
+# Se omitido, o nome do módulo será usado.
+module.title=Gestor do Mercadologic
+
+# Descrição resumida do módulo.
+module.description=Sistema de Gestão Centralizada do Mercadologic.
+
+# Pacotes selecionados por padrão quando o "migrant.exe" é lançado.
+packages.pre-selected=Mercadologic,Director

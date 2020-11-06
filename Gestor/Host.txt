@@ -1,0 +1,9 @@
+﻿# Pasta de arquivos de dados comum a todos os usuários do sistema.
+Host.InstanceId=4C854ABB-78BC-40FC-898A-0C73B9F73464
+Host.Name=migrant
+Host.Version=1.2.0-trunk_r23742
+Host.Path=H:\Sources\processa\director\trunk\Scripts\Modulos\Mlogic.Gestor\trunk\Gestor
+Host.EnvironmentDataPath=C:\ProgramData\Processa Sistemas\Environments\Default\migrant
+Host.InstanceDataPath=C:\ProgramData\Processa Sistemas\Instances\{4C854ABB-78BC-40FC-898A-0C73B9F73464}
+Host.SharedDataPath=C:\ProgramData\Processa Sistemas\Shared
+Host.LastRun=2020-11-05T09:43:18

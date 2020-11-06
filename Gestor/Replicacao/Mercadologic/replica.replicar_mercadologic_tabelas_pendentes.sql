@@ -76,8 +76,6 @@ begin
        and replicado = 0
        and id > @id
   end
-
-  raiserror(N'TABELAS DO CONCENTRADOR REPLICADAS NO GESTOR.',10,1) with nowait
 end
 go
 
