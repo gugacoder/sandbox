@@ -114,6 +114,7 @@ select * from @audit
 
 */
 
+/*
 
 --
 -- SCHEMA host
@@ -182,7 +183,7 @@ end
 go
 
 exec host.lock_key 'tananana'
-
+*/
 
 
 /*
@@ -275,41 +276,27 @@ exec dbo.job__modulo__evento 7, 'exec'
 
 
 
-select * from replica.evento
-select * from replica.texto
-select * from replica.vw_evento where tabela = 'formapagamentoefetuada'
-select * from replica.vw_evento where id>=211
-select * from replica.vw_evento where chave=520752
+exec replica.replicar_mercadologic 7
+exec replica.replicar_mercadologic_eventos 7
+exec replica.clonar_tabelas_monitoradas_mercadologic 7
+exec replica.replicar_mercadologic_eventos 7
+exec replica.replicar_mercadologic_tabelas_pendentes 7
+-- delete from replica.evento
+select top 10 * from replica.vw_evento
+select * from replica.formapagamentoefetuada
+select * from replica.cupomfiscal
 
-select replica.monitorar_tabela('formapagamentoefetuada')
-select * from replica.vw_tabela_monitorada
+/*
+drop table replica.cupomfiscal
+drop table replica.itemcupomfiscal
+drop table replica.formapagamentoefetuada
+-- drop table replica.evento
+*/
 
-create table tananana (
-  id int,
+create table exemplo (
+  id serial primary key,
   nome varchar(100)
 )
-select replica.monitorar_tabela('tananana')
-insert into tananana values (2, 'two')
-
-select * from formapagamentoefetuada where id in (520752,520753)
-
-
--- update formapagamentoefetuada set codigo = codigo where id=520752
-select xmin, * from formapagamentoefetuada where id=520752
--- 833345
--- 833345
--- 833346
-
-
-select * from TBempresa_mercadologic
-
-
-exec replica.replicar_mercadologic 7
-
-exec mlogic.replicar_tabelas_mercadologic 7
-
-
-select * from mlogic.vw_replica_itemcupomfiscal
-select * from DBmercadologic.replica.vw_empresa
-
-
+--select replica.monitorar_tabela('exemplo')
+insert into exemplo values (1, 'one');
+insert into exemplo values (2, 'two');

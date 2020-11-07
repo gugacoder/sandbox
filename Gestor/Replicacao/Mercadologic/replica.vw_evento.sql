@@ -4,9 +4,10 @@
 drop view if exists replica.vw_evento
 go
 create view replica.vw_evento as 
-select evento.cod_empresa
+select evento.id_evento
+     , evento.cod_empresa
      , evento.replicado
-     , evento.id
+     , evento.id_remoto
      , esquema.texto as esquema
      , tabela.texto as tabela
      , evento.chave

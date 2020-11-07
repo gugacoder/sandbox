@@ -119,7 +119,18 @@ begin
   -- Construindo a tabela de replica...
   --
   if object_id(@tabela_replica) is null begin
-    set @sql = concat('create table ',@tabela_replica,' (cod_empresa int not null)')
+    -- HISTORICO:
+    --    0. Registro atual.
+    --    1. Registro defasado. Existe uma versão mais nova.
+    --   -1. Registro apagado na origem.
+    set @sql = concat(
+      'create table ',@tabela_replica,' (
+         id_evento bigint not null primary key
+           foreign key references replica.evento (id_evento)
+           on delete cascade,
+         cod_empresa int not null,
+         historico int not null default (0)
+       )')
     exec sp_executesql @sql
   end
 

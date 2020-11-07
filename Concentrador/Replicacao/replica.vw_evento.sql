@@ -19,4 +19,3 @@ select evento.id
  inner join replica.texto as esquema on esquema.id = evento.id_esquema
  inner join replica.texto as tabela  on tabela .id = evento.id_tabela
  inner join replica.texto as origem  on origem .id = evento.id_origem;
-

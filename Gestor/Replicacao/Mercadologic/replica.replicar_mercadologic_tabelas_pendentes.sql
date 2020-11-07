@@ -1,5 +1,5 @@
 --
--- PROCEDURE replica.replicar_mercadologic_tabelas_pendentes
+-- PROCEDURE replicar_mercadologic_tabelas_pendentes
 --
 drop procedure if exists replica.replicar_mercadologic_tabelas_pendentes
 go
@@ -36,26 +36,28 @@ begin
      where DFcod_empresa = @cod_empresa
   end
 
-  declare @id int
+  declare @id_evento int
   declare @tabela varchar(100)
   declare @chave_tabela int
-
-  select @id = min(id)
+  declare @sucesso int
+  
+  select @id_evento = min(id_evento)
     from replica.evento
    where cod_empresa = @cod_empresa
      and replicado = 0
 
-  while @id is not null begin
+  while @id_evento is not null begin
   
     select @tabela = concat(esquema.texto,'.',tabela.texto)
          , @chave_tabela = evento.chave
       from replica.evento
      inner join replica.texto esquema on esquema.id = evento.id_esquema
      inner join replica.texto tabela on tabela.id = evento.id_tabela
-     where evento.id = @id
+     where evento.id_evento = @id_evento
 
-    exec replica.replicar_mercadologic_tabela
+    exec @sucesso=replica.replicar_mercadologic_tabela
          @cod_empresa
+       , @id_evento
        , @tabela
        , @chave_tabela
        , @provider
@@ -67,15 +69,17 @@ begin
        , @senha
 
     update replica.evento
-       set replicado = 1
-     where id = @id
+       set replicado = case @sucesso when 0 then 1 else 0 end
+     where id_evento = @id_evento
   
-    select @id = min(id)
+    select @id_evento = min(id_evento)
       from replica.evento
      where cod_empresa = @cod_empresa
        and replicado = 0
-       and id > @id
+       and id_evento > @id_evento
   end
+
+  return 1 -- sucesso
 end
 go
 

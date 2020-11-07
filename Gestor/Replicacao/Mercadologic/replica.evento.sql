@@ -3,11 +3,13 @@
 --
 if object_id('replica.evento') is null
   create table replica.evento (
+    id_evento bigint not null identity(1,1)
+      constraint PK__replica_evento primary key,
     cod_empresa int not null,
     replicado bit not null
       constraint DF__replica_evento__replicado
          default 0,
-    id int not null,
+    id_remoto int not null,
     id_esquema int not null
       constraint FK__replica_evento__replica_texto__esquema
       foreign key references replica.texto(id),
@@ -21,8 +23,8 @@ if object_id('replica.evento') is null
     id_origem int not null
       constraint FK__replica_evento__replica_texto__origem
       foreign key references replica.texto(id),
-    constraint PK_replica_evento
-       primary key (cod_empresa, id)
+    constraint UQ_replica_evento
+        unique (cod_empresa, id_remoto)
   )
 go
 

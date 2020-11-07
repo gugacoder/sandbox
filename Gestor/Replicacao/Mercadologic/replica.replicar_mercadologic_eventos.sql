@@ -50,7 +50,7 @@ begin
     , origem varchar(100)
   )
 
-  select @ultimo_id_evento = coalesce(max(id), 0)
+  select @ultimo_id_evento = coalesce(max(id_remoto), 0)
     from replica.evento
 
   set @sql = '
@@ -103,11 +103,11 @@ begin
   merge replica.evento
   using evento_remoto
      on evento_remoto.cod_empresa = replica.evento.cod_empresa
-    and evento_remoto.id = replica.evento.id
+    and evento_remoto.id = replica.evento.id_remoto
    when not matched by target then
         insert (
             cod_empresa
-          , id
+          , id_remoto
           , id_esquema
           , id_tabela
           , chave

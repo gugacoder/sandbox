@@ -2,7 +2,7 @@
 -- FUNCTION replica.monitorar_tabela
 --
 create or replace function replica.monitorar_tabela(tabela varchar)
-returns varchar as $$
+returns void as $$
 declare
   esquema varchar;
 begin
@@ -20,9 +20,9 @@ begin
     for each row
     execute procedure replica.registrar_evento();'
       using tabela;
-  return
-    'TRIGGER `tg_' || tabela || ''' ' ||
-    'ANEXADA A TABELA `' || esquema || '.' || tabela || ''' ' ||
-    'PARA MONITORAMENTO DE EVENTOS.';
+
+  RAISE NOTICE 'TRIGGER `tg_%s` ANEXADA A TABELA `%.%` PARA MONITORAMENTO DE EVENTOS.',
+    tabela, esquema, tabela;
+    
 end;
 $$ language plpgsql;
