@@ -121,6 +121,7 @@ select * from @audit
 if not exists (select 1 from sys.schemas where name = 'host') begin
   exec sp_executesql N'create schema host'
 end
+go
 
 --
 -- TABELA host.instance
@@ -145,6 +146,7 @@ if object_id('host.instance') is null begin
   create index ix__host_instance__guid
       on host.instance ("guid")
 end
+go
 
 --
 -- TABELA host.locking
@@ -163,19 +165,21 @@ if object_id('host.locking') is null begin
       on delete set null
   )
 end
+go
 
 --
 -- PROCEDURE host.lock_key
 --
-if object_id('host.lock_key') is null begin
-  create procedure host.lock_key
-    @key varchar(100),
-    @instance_id int = null
-  as
-  begin
-    select @key, @instance_id
-  end
+drop procedure if exists host.lock_key
+go
+create procedure host.lock_key
+    @key varchar(100)
+  , @instance_id int = null
+as
+begin
+  select @key, @instance_id
 end
+go
 
 exec host.lock_key 'tananana'
 
@@ -297,4 +301,15 @@ select xmin, * from formapagamentoefetuada where id=520752
 -- 833346
 
 
+select * from TBempresa_mercadologic
+
+
 exec replica.replicar_mercadologic 7
+
+exec mlogic.replicar_tabelas_mercadologic 7
+
+
+select * from mlogic.vw_replica_itemcupomfiscal
+select * from DBmercadologic.replica.vw_empresa
+
+

@@ -3,7 +3,9 @@
 --
 create or alter view replica.vw_empresa
 as 
-select * from {ScriptPack.Director}.dbo.TBempresa_mercadologic
+select *
+     , cast(null as datetime) as DFreplicacao_desativado
+  from {ScriptPack.Director}.dbo.TBempresa_mercadologic
 go
 
 

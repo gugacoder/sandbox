@@ -7,6 +7,6 @@ create procedure mlogic.replicar_tabelas_mercadologic (
     @cod_empresa int
 ) as
 begin
-  exec DBmercadologic.replica.replicar_mercadologic @cod_empresa
+  exec {ScriptPack.Mercadologic}.replica.replicar_mercadologic @cod_empresa
 end
 go
