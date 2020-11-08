@@ -114,7 +114,6 @@ select * from @audit
 
 */
 
-/*
 
 --
 -- SCHEMA host
@@ -129,17 +128,17 @@ go
 --
 if object_id('host.instance') is null begin
   create table host.instance (
-    "id" int identity(1,1)
+    [id] int identity(1,1)
       constraint pk__host_instance
       primary key,
-    "guid" uniqueidentifier not null,
-    "revision" varchar(50) not null,
-    "device" nvarchar(255) not null,
-    "ip" nvarchar(1024) not null,
-    "started" bit not null
+    [guid] uniqueidentifier not null,
+    [revision] varchar(50) not null,
+    [device] nvarchar(255) not null,
+    [ip] nvarchar(1024) not null,
+    [started] bit not null
       constraint def__host_instance__on
       default (1),
-    "last_seen" datetime not null
+    [last_seen] datetime not null
       constraint def__host_instance__last_seen
       default (current_timestamp)
   )
@@ -154,56 +153,29 @@ go
 --
 if object_id('host.locking') is null begin
   create table host.locking (
-    "key" varchar(100) not null
+    [key] varchar(100) not null
       constraint pk__host_locking
       primary key,
-    "at" datetime not null
+    [at] datetime not null
       constraint def__host_locking__at
       default (current_timestamp),
-    "instance_id" int null
-      constraint fk__host_locking__host_instance
-      foreign key references host.instance (id)
-      on delete set null
+    [instance_guid] uniqueidentifier not null
   )
 end
 go
 
+
+
 --
--- PROCEDURE host.lock_key
+-- PROCEDURE host.jobtask__sandbox__exemplo_de_evento
 --
-drop procedure if exists host.lock_key
+drop procedure if exists dbo.jobtask__sandbox__exemplo_de_evento
 go
-create procedure host.lock_key
-    @key varchar(100)
-  , @instance_id int = null
-as
-begin
-  select @key, @instance_id
-end
-go
-
-exec host.lock_key 'tananana'
-*/
-
-
-/*
-
-insert into host.TBinstancia (DFguid, DFversao, DFips, DFdispositivo)
-values (newid(), '0.1.0', 'localhost', 'stormwind')
-
-insert into host.TBjob_ticket (DFmodulo, DFevento, DFid_instancia)
-values ('modulo', 'evento', 1)
-
-select * from host.TBjob_ticket
-
---
--- PROCEDURE host.job__modulo__evento
---
-drop procedure if exists dbo.job__modulo__evento
-go
-create procedure dbo.job__modulo__evento
-  @cod_empresa int,
-  @comando varchar(10)
+create procedure dbo.jobtask__sandbox__exemplo_de_evento
+  @comando varchar(10),
+  @cod_empresa int = null,
+  @id_usuario int = null,
+  @id_instancia uniqueidentifier = null
 as
 begin
   -- JOB simples do HOST de serviços.
@@ -267,15 +239,25 @@ begin
   end
 
   select dateadd(s, 2, current_timestamp) as next_run
+
+  print concat('@comando: ', @comando)
+  print concat('@cod_empresa: ', @cod_empresa)
+  print concat('@id_usuario: ', @id_usuario)
+  print concat('@id_instancia: ', @id_instancia)
 end
 go
 
-exec dbo.job__modulo__evento 7, 'init'
-exec dbo.job__modulo__evento 7, 'exec'
-*/
+declare @guid uniqueidentifier = newid()
+exec dbo.jobtask__sandbox__exemplo_de_evento 'init', 7, null, @guid
+-- exec dbo.job__modulo__evento @guid, 'exec', 7
+
+select DBmercadologic.replica.SPLIT_PART(name, '__', 2) as DFmodulo
+     , DBmercadologic.replica.SPLIT_PART(name, '__', 4) as DFevento
+  from sys.objects
+ where name like 'jobtask[_][_]%[_][_]%'
 
 
-
+/*
 exec replica.replicar_mercadologic 7
 exec replica.replicar_mercadologic_eventos 7
 exec replica.clonar_tabelas_monitoradas_mercadologic 7
@@ -284,19 +266,24 @@ exec replica.replicar_mercadologic_tabelas_pendentes 7
 -- delete from replica.evento
 select top 10 * from replica.vw_evento
 select * from replica.formapagamentoefetuada
-select * from replica.cupomfiscal
+select * from replica.exemplo
+inner join replica.vw_evento on vw_evento.id_evento = cupomfiscal.id_evento
+
+select * from DBdirector_MAC_29.mlogic.vw_replica_formapagamentoefetuada_historico
+*/
 
 /*
 drop table replica.cupomfiscal
 drop table replica.itemcupomfiscal
 drop table replica.formapagamentoefetuada
+exec sp_executesql N'
+  use DBdirector_mac_29
+  drop view mlogic.vw_replica_cupomfiscal
+  drop view mlogic.vw_replica_itemcupomfiscal
+  drop view mlogic.vw_replica_formapagamentoefetuada
+'
 -- drop table replica.evento
 */
 
-create table exemplo (
-  id serial primary key,
-  nome varchar(100)
-)
---select replica.monitorar_tabela('exemplo')
-insert into exemplo values (1, 'one');
-insert into exemplo values (2, 'two');
+
+
