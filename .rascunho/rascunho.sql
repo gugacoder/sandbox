@@ -110,151 +110,22 @@ insert into @audit exec job.job_mercadologic_replicar_tabelas 7, 'done', @args
 
 select * from @audit
 
-
-
+declare @id_referente int = cast(@id_referente_original as int); exec host.jobtask__sandbox__exemplo_de_evento @comando, @cod_empresa, @id_usuario, @id_referente, @id_instancia, @automatico
 */
+exec host.executar_job
+    @esquema='host'
+  , @modulo='sandbox'
+  , @tarefa='exemplo_de_evento'
+  , @comando='init'
+  , @cod_empresa=1
+  , @id_usuario=1
+  , @id_referente=15
 
+--exec host.jobtask__sandbox__exemplo_de_evento 'init', 7, @automatico=1
+--select * from host.TBjob
 
---
--- SCHEMA host
---
-if not exists (select 1 from sys.schemas where name = 'host') begin
-  exec sp_executesql N'create schema host'
-end
-go
-
---
--- TABELA host.instance
---
-if object_id('host.instance') is null begin
-  create table host.instance (
-    [id] int identity(1,1)
-      constraint pk__host_instance
-      primary key,
-    [guid] uniqueidentifier not null,
-    [revision] varchar(50) not null,
-    [device] nvarchar(255) not null,
-    [ip] nvarchar(1024) not null,
-    [started] bit not null
-      constraint def__host_instance__on
-      default (1),
-    [last_seen] datetime not null
-      constraint def__host_instance__last_seen
-      default (current_timestamp)
-  )
-
-  create index ix__host_instance__guid
-      on host.instance ("guid")
-end
-go
-
---
--- TABELA host.locking
---
-if object_id('host.locking') is null begin
-  create table host.locking (
-    [key] varchar(100) not null
-      constraint pk__host_locking
-      primary key,
-    [at] datetime not null
-      constraint def__host_locking__at
-      default (current_timestamp),
-    [instance_guid] uniqueidentifier not null
-  )
-end
-go
-
-
-
---
--- PROCEDURE host.jobtask__sandbox__exemplo_de_evento
---
-drop procedure if exists dbo.jobtask__sandbox__exemplo_de_evento
-go
-create procedure dbo.jobtask__sandbox__exemplo_de_evento
-  @comando varchar(10),
-  @cod_empresa int = null,
-  @id_usuario int = null,
-  @id_instancia uniqueidentifier = null
-as
-begin
-  -- JOB simples do HOST de serviços.
-  --
-  -- O JOB tem duas responsabilidades:
-  -- 1. Executar sua função como prefereir.
-  -- 2. Resultar a data de sua próxima execução.
-  --
-  -- Nomenclatura
-  --    Toda procedure de JOB deve ter uma estrutura rígida de nome
-  --    na forma:
-  --        [esquema].job__[modulo]__[evento]
-  --    O HOST detecta automaticamente procedures com este padrão de nome
-  --    e agenda tarefas no seu motor para executá-las.
-  --    Exemplos de nomes:
-  --        host.job__manutencao__backup_de_12h
-  --        -   esquema: host
-  --        -   modulo: manutencao
-  --        -   evento: backup_de_12h
-  --        mlogic.job__carga__enviar_carga
-  --        -   esquema: mlogic
-  --        -   modulo: carga
-  --        -   evento: enviar_carga
-  --        dbo.job__sped__nfe_autorizarNfe
-  --        -   esquema: dbo
-  --        -   modulo: sped
-  --        -   evento: nfe_autorizarNfe
-  --
-  -- Ciclo de Vida
-  -- -  init
-  --      Na primeira execução a procedure recebe o @comando 'init'.
-  --      Neste momento é esperado que a procedure apenas resulte a
-  --      data de sua primeira execução.
-  -- -  exec
-  --      Nas execuções subsequentes a procedure recebe o @comando 'exec'.
-  --      Esta é a orgem direta para execução da função da procedure.
-  --      Ao final da execução, a procedure pode resultar a data de sua
-  --      próxima execução, se quiser ser executada novamente, ou nada
-  --      resultar, para não ser mais executada.
-  --
-  -- Agendamento
-  --    O resultado da procedure deve ser: nenhum, para não ser mais executada,
-  --    ou a data de sua próxima execução, como uma coluna chamada 'next_run'.
-  --
-  -- Exemplo
-  --    Neste exemplo a procedure é executada em intervalos de 2 segundos:
-  --
-  --      create procedure dbo.job_exemplo_faz_algo_util
-  --        @cod_empresa int,
-  --        @comando varchar(10)
-  --      as
-  --      begin
-  --        if @comando = 'exec' begin
-  --          ... faz aquilo que deve ser feito ...
-  --        end
-  --        select dateadd(s, 2, current_timestamp) as next_run
-  --      end
-
-  if @comando = 'exec' begin
-    print 'ISTO É O ESPERADO A SER FEITO PELA PROCEDURE'
-  end
-
-  select dateadd(s, 2, current_timestamp) as next_run
-
-  print concat('@comando: ', @comando)
-  print concat('@cod_empresa: ', @cod_empresa)
-  print concat('@id_usuario: ', @id_usuario)
-  print concat('@id_instancia: ', @id_instancia)
-end
-go
-
-declare @guid uniqueidentifier = newid()
-exec dbo.jobtask__sandbox__exemplo_de_evento 'init', 7, null, @guid
--- exec dbo.job__modulo__evento @guid, 'exec', 7
-
-select DBmercadologic.replica.SPLIT_PART(name, '__', 2) as DFmodulo
-     , DBmercadologic.replica.SPLIT_PART(name, '__', 4) as DFevento
-  from sys.objects
- where name like 'jobtask[_][_]%[_][_]%'
+--select * from host.vw_jobtask
+--select * from host.vw_jobtask_parametro
 
 
 /*

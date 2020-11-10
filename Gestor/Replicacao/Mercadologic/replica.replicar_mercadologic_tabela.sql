@@ -52,8 +52,8 @@ begin
   declare @status int
 
   if @tabela_mercadologic like '%.%' begin
-    set @esquema = replica.SPLIT_PART(@tabela_mercadologic, '.', 0)
-    set @tabela = replica.SPLIT_PART(@tabela_mercadologic, '.', 1)
+    set @esquema = replica.SPLIT_PART(@tabela_mercadologic, '.', 1)
+    set @tabela = replica.SPLIT_PART(@tabela_mercadologic, '.', 2)
   end else begin
     set @esquema = 'public'
     set @tabela = @tabela_mercadologic
