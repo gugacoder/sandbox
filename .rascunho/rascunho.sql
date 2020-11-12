@@ -1,3 +1,4 @@
+--  return concat(object_schema_name(@procid),'.',object_name(@procid))
 
 -- exec mlogic.replicar_tabelas_mercadologic 7
 
@@ -112,20 +113,26 @@ select * from @audit
 
 declare @id_referente int = cast(@id_referente_original as int); exec host.jobtask__sandbox__exemplo_de_evento @comando, @cod_empresa, @id_usuario, @id_referente, @id_instancia, @automatico
 */
+
+/*
+
 exec host.executar_job
     @esquema='host'
   , @modulo='sandbox'
   , @tarefa='exemplo_de_evento'
   , @comando='init'
-  , @cod_empresa=1
-  , @id_usuario=1
+  , @cod_empresa=17
+  , @id_usuario=18
   , @id_referente=15
 
---exec host.jobtask__sandbox__exemplo_de_evento 'init', 7, @automatico=1
---select * from host.TBjob
+-- exec host.jobtask__sandbox__exemplo_de_evento 'init', 7, @automatico=1
+select *
+-- delete
+from host.TBjob
+*/
 
---select * from host.vw_jobtask
---select * from host.vw_jobtask_parametro
+-- select * from host.vw_jobtask
+-- select * from host.vw_jobtask_parametro
 
 
 /*
@@ -155,6 +162,101 @@ exec sp_executesql N'
 '
 -- drop table replica.evento
 */
+
+
+
+delete from host.TBjob
+
+
+declare @id_job int
+declare @id_procedure int
+declare @tb_procedure table (
+  DFid_procedure int identity(1,1) primary key,
+  DFprocedure varchar(100)
+)
+declare @tb_parametro table (
+  DFprocedure varchar(100),
+  DFparametro varchar(100)
+)
+declare @procedure varchar(100)
+
+insert into @tb_procedure (DFprocedure)
+select DFprocedure
+  from host.vw_jobtask
+ where DFautomatico = 1
+   and DFvalido = 1
+
+insert into @tb_parametro (DFprocedure, DFparametro)
+select DFprocedure, DFparametro
+  from host.vw_jobtask_parametro
+ where DFprocedure = @procedure
+ order by DFordem
+
+select @id_procedure = min(DFid_procedure) from @tb_procedure
+while @id_procedure is not null begin
+
+  select @procedure = DFprocedure
+    from @tb_procedure
+   where DFid_procedure = @id_procedure
+
+  insert into 
+
+  if exists (select 1 from @tb_parametro
+              where DFprocedure = @procedure and DFparametro = '@comando') begin
+    insert into host.TBjob_parametro (DFid_job, DFchave, DFvalor)
+    
+  end
+
+  select * from @tb_parametro
+
+  select @procedure
+
+  select @id_procedure = min(DFid_procedure) from @tb_procedure
+   where DFid_procedure > @id_procedure
+end
+
+/*
+declare @tb_job table (
+    DFid_job bigint
+)
+
+insert into host.TBjob (DFprocedure)
+output inserted.DFid_job into @tb_job
+select DFprocedure from host.vw_jobtask
+
+insert into host.TBjob_parametro (DFid_job, DFchave, DFvalor)
+select DFid_job, '@comando', 'init'
+  from @tb_job
+
+insert into host.TBjob_parametro (DFid_job, DFchave, DFvalor)
+select DFid_job, '@comando', 'init'
+  from @tb_job
+
+select * from host.TBjob_parametro
+*/
+
+--select * from @tb_job
+--select * from host.TBjob
+-- insert into host.TBjob_parametro
+-- select tb_job.DFid_job, vw_jobtask_parametro.DFparametro, 
+--   from host.vw_jobtask_parametro
+--  inner join @tb_job as tb_job
+--          on tb_job.DFprocedure = host.vw_jobtask_parametro.DFprocedure
+
+-- select * from host.TBjob_parametro
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

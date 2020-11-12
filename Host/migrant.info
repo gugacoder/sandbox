@@ -1,0 +1,17 @@
+#
+# Informações de geração do setup para migração dos scripts via migrant.exe
+#
+
+# Nome do módulo
+# Use apenas letras, números, pontos, sublinhas e hífens.
+module.name=Host
+
+# Título do módulo.
+# Se omitido, o nome do módulo será usado.
+module.title=Barramento de Serviços
+
+# Descrição resumida do módulo.
+module.description=Barramento de hospedagem de serviços.
+
+# Pacotes selecionados por padrão quando o "migrant.exe" é lançado.
+packages.pre-selected=Api
