@@ -18,6 +18,9 @@ create procedure host.jobtask_exemplo_de_job_manual
   -- @automatico bit
 as
 begin
+  if @comando = 'init' begin
+    return -- nada a fazer
+  end
 
   declare @msg varchar(max)
   set @msg = concat('@parametro=',@parametro)         raiserror (@msg,10,1) with nowait

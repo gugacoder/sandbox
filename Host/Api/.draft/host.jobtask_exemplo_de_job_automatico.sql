@@ -29,22 +29,22 @@ begin
     
     if @data_execucao is null set @data_execucao = current_timestamp
 
-    exec host.agendar_job
+    exec host.schedule_job
       @job=@@procid,
-      @descricao='Exemplo de JOB automático',
-      @data_execucao=@data_execucao
+      @due_date=@data_execucao,
+      @description='Exemplo de JOB automático'
 
   end else if @comando = 'exec' begin
 
     declare @job_data_execucao datetime = current_timestamp
-    declare @args host.args
+    declare @args host.parameter
 
     insert into @args values ('@parametro', 'Hello, world! It works! It really works!')
 
-    exec host.agendar_job
+    exec host.schedule_job
       @job='host.jobtask_exemplo_de_job_manual',
-      @descricao='Executando um outro JOB manualmente...',
-      @data_execucao=@job_data_execucao,
+      @due_date=@job_data_execucao,
+      @description='Executando um outro JOB manualmente...',
       @args=@args
 
   end

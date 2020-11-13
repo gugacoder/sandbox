@@ -1,31 +1,28 @@
---
--- FUNCTION host.SPLIT
---
-drop function if exists host.SPLIT  
+drop function if exists [host].[SPLIT]  
 go
-create function host.SPLIT(
+create function [host].[SPLIT](
     @string nvarchar(max)
-  , @delimitador nvarchar(max)
+  , @delimiter nvarchar(max)
   )
-returns @termos table ([indice] int identity(1,1), [valor] nvarchar(max))
+returns @terms table ([index] int identity(1,1), [value] nvarchar(max))
 as
 begin
   if @string is null return
 
-  declare @indice int = 1
-  declare @termo nvarchar(max)
+  declare @index int = 1
+  declare @term nvarchar(max)
 
-  while @indice != 0
+  while @index != 0
   begin
-    set @indice = charindex(@delimitador, @string)
-    if @indice != 0
-      set @termo = left(@string, @indice - 1)
+    set @index = charindex(@delimiter, @string)
+    if @index != 0
+      set @term = left(@string, @index - 1)
     else
-      set @termo = @string
+      set @term = @string
     
-    insert into @termos ([valor]) values (@termo)
+    insert into @terms ([value]) values (@term)
 
-    set @string = right(@string, len(@string) - @indice - len(@delimitador) + 1)
+    set @string = right(@string, len(@string) - @index - len(@delimiter) + 1)
     if len(@string) = 0
       break
   end

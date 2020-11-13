@@ -1,37 +1,34 @@
---
--- FUNCTION host.SPLIT_PART
---
-drop function if exists host.SPLIT_PART
+drop function if exists [host].[SPLIT_PART]
 go
-create function host.SPLIT_PART(
+create function [host].[SPLIT_PART](
     @string nvarchar(max)
-  , @delimitador nvarchar(max)
-  , @posicao_do_termo_desejado int)
+  , @delimiter nvarchar(max)
+  , @wanted_position int)
 returns nvarchar(max)
 as
 begin
   if @string is null return null
 
-  declare @posicao int = 1
-  declare @indice int = 1
-  declare @termo nvarchar(max)
+  declare @position int = 1
+  declare @index int = 1
+  declare @term nvarchar(max)
 
-  while @indice != 0
+  while @index != 0
   begin
-    set @indice = charindex(@delimitador, @string)
-    if @indice != 0
-      set @termo = left(@string, @indice - 1)
+    set @index = charindex(@delimiter, @string)
+    if @index != 0
+      set @term = left(@string, @index - 1)
     else
-      set @termo = @string
+      set @term = @string
     
-    if @posicao = @posicao_do_termo_desejado
-      return @termo
+    if @position = @wanted_position
+      return @term
 
-    set @string = right(@string, len(@string) - @indice - len(@delimitador) + 1)
+    set @string = right(@string, len(@string) - @index - len(@delimiter) + 1)
     if len(@string) = 0
       break
 
-    set @posicao = @posicao + 1
+    set @position = @position + 1
   end
   return null
 end

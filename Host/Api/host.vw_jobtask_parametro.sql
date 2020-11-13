@@ -1,20 +1,21 @@
---
--- VIEW host.vw_jobtask_parametro
---
-drop view if exists host.vw_jobtask_parametro
+drop view if exists [host].[vw_jobtask_parameter]
 go
-create view host.vw_jobtask_parametro
+create view [host].[vw_jobtask_parameter]
 as
-with tb_parametros as (
-  select sys.schemas.name as esquema
+with tb_parameters as (
+  select sys.schemas.name as [schema]
        , sys.objects.name as [procedure]
-       , sys.parameters.name as parametro
+       , sys.parameters.name as [parameter]
        , case type_name(sys.parameters.user_type_id)
+           when 'char' then concat('char(',sys.parameters.max_length,')')
+           when 'nchar' then concat('nchar(',sys.parameters.max_length/2,')')
            when 'varchar' then concat('varchar(',sys.parameters.max_length,')')
+           when 'nvarchar' then concat('nvarchar(',sys.parameters.max_length/2,')')
            when 'decimal' then concat('decimal(',sys.parameters.precision,',',sys.parameters.scale,')')
+           when 'numeric' then concat('numeric(',sys.parameters.precision,',',sys.parameters.scale,')')
            else type_name(sys.parameters.user_type_id)
-         end tipo
-       , sys.parameters.parameter_id as ordem
+         end [type]
+       , sys.parameters.parameter_id as [order]
     from sys.objects
    inner join sys.parameters
            on sys.parameters.object_id = sys.objects.object_id
@@ -22,55 +23,52 @@ with tb_parametros as (
            on sys.schemas.schema_id = sys.objects.schema_id
    where sys.objects.name like 'jobtask__%__%'
 )
-select esquema as DFesquema
-     , host.SPLIT_PART([procedure], '__', 2) as DFmodulo
-     , host.SPLIT_PART([procedure], '__', 3) as DFtarefa
-     , concat(esquema,'.',[procedure]) as DFprocedure
-     , parametro as DFparametro
-     , ordem as DFordem
-     , tipo as DFtipo
+select concat([schema],'.',[procedure]) as [procedure]
+     , [parameter] as [name]
+     , [order]
+     , [type]
      , cast(case
-          when parametro = '@id_job'        and tipo = 'bigint'           then 1
-          when parametro = '@comando'       and tipo = 'varchar(10)'      then 1
-          when parametro = '@cod_empresa'   and tipo = 'int'              then 1
-          when parametro = '@id_usuario'    and tipo = 'int'              then 1
-          when parametro = '@instancia'     and tipo = 'uniqueidentifier' then 1
-          when parametro = '@automatico'    and tipo = 'bit'              then 1
-          when parametro = '@data_execucao' and tipo = 'datetime'         then 1
-          when parametro = '@id_referente'  then 1
+          when [parameter] = '@id_job'        and [type] = 'bigint'           then 1
+          when [parameter] = '@comando'       and [type] = 'varchar(10)'      then 1
+          when [parameter] = '@cod_empresa'   and [type] = 'int'              then 1
+          when [parameter] = '@id_usuario'    and [type] = 'int'              then 1
+          when [parameter] = '@instancia'     and [type] = 'uniqueidentifier' then 1
+          when [parameter] = '@automatico'    and [type] = 'bit'              then 1
+          when [parameter] = '@data_execucao' and [type] = 'datetime'         then 1
+          when [parameter] = '@id_referente'  then 1
           else 0
-       end as bit) DFvalido
-     , case parametro
+       end as bit) [valid]
+     , case [parameter]
           when '@id_job' then
-            case when tipo != 'bigint'
-              then 'O parâmetro '+parametro+' deveria ser definido como varchar(10) mas foi definido como '+tipo+'.'
+            case when [type] != 'bigint'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como varchar(10) mas foi definido como '+[type]+'.'
             end
           when '@comando' then
-            case when tipo != 'varchar(10)'
-              then 'O parâmetro '+parametro+' deveria ser definido como varchar(10) mas foi definido como '+tipo+'.'
+            case when [type] != 'varchar(10)'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como varchar(10) mas foi definido como '+[type]+'.'
             end
           when '@cod_empresa' then
-            case when tipo != 'int'
-              then 'O parâmetro '+parametro+' deveria ser definido como int mas foi definido como '+tipo+'.'
+            case when [type] != 'int'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como int mas foi definido como '+[type]+'.'
             end
           when '@id_usuario' then
-            case when tipo != 'int'
-              then 'O parâmetro '+parametro+' deveria ser definido como int mas foi definido como '+tipo+'.'
+            case when [type] != 'int'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como int mas foi definido como '+[type]+'.'
             end
           when '@instancia' then
-            case when tipo != 'uniqueidentifier'
-              then 'O parâmetro '+parametro+' deveria ser definido como uniqueidentifier mas foi definido como '+tipo+'.'
+            case when [type] != 'uniqueidentifier'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como uniqueidentifier mas foi definido como '+[type]+'.'
             end
           when '@automatico' then
-            case when tipo != 'bit'
-              then 'O parâmetro '+parametro+' deveria ser definido como bit mas foi definido como '+tipo+'.'
+            case when [type] != 'bit'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como bit mas foi definido como '+[type]+'.'
             end
           when '@data_execucao' then
-            case when tipo != 'datetime'
-              then 'O parâmetro '+parametro+' deveria ser definido como bit mas foi definido como '+tipo+'.'
+            case when [type] != 'datetime'
+              then 'O parâmetro '+[parameter]+' deveria ser definido como bit mas foi definido como '+[type]+'.'
             end
           when '@id_referente' then null
-          else 'O parâmetro '+parametro+' não é suportado.'
-       end DFinconsistencia
-  from tb_parametros
+          else 'O parâmetro '+[parameter]+' não é suportado.'
+       end [fault]
+  from tb_parameters
 go
