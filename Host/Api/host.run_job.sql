@@ -8,24 +8,20 @@ create procedure [host].[run_job]
   @job_id int = null,
   @procedure varchar(100) = null,
   -- Parâmetros do JOB
-  @action varchar(10) = null,
+  @command varchar(10) = null,
   @instance uniqueidentifier = null,
-  @args host.parameter readonly,
-  -- Versao dos parametros em pt-BR para compatibilidade
-  @comando varchar(10) = null,
-  @id_job int = null,
-  @instancia uniqueidentifier = null
+  @args host.parameter readonly
 as
 begin
+  set nocount on
+
   declare @sql nvarchar(max)
   declare @declaration  nvarchar(max)
   declare @params host.parameter
   declare @job_procedure varchar(100)
-    
-  set @action = coalesce(@action, @comando, 'exec')
-  set @job_id = coalesce(@job_id, @id_job)
-  set @instance = coalesce(@instance, @instancia)
 
+  set @command = coalesce(@command, 'exec')
+    
   if @procedure is null and @job_id is null begin
     raiserror ('Ou o ID do JOB ou o nome da procedure deve ser indicado.',16,1) with nowait
     return
@@ -50,11 +46,10 @@ begin
   select @sql = @sql + ' ' + [name] + ','
     from host.vw_jobtask_parameter
    where [procedure] = @procedure
-   order by [order]
 
   set @sql = left(@sql, len(@sql)-1)
 
-  insert into @params ([name], [value]) values ('@action', @action)
+  insert into @params ([name], [value]) values ('@command', @command)
   insert into @params ([name], [value]) values ('@instance', @instance)
   insert into @params ([name], [value]) values ('@job_id', @job_id)
   insert into @params ([name], [value]) select '@due_date', [due_date] from [host].[job] where [id] = @job_id
@@ -62,7 +57,7 @@ begin
   insert into @params ([name], [value]) 
   select [pt].[name_pt], [params].[value]
     from @params as [params] inner join (values
-      ('@action','@comando'),
+      ('@command','@comando'),
       ('@instance','@instancia'),
       ('@job_id','@id_job'),
       ('@due_date','@data_execucao')
@@ -93,7 +88,6 @@ begin
     ) as t
 
   set @sql = @declaration + @sql
-  print @sql
 
   exec sp_executesql
       @sql

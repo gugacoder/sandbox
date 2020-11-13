@@ -4,17 +4,35 @@
 drop procedure if exists host.jobtask_sample_job
 go
 create procedure host.jobtask_sample_job
-  -- parâmetros especiais do JOB
-  @job_id bigint,
-  @action varchar(10),
-  @instance uniqueidentifier,
-  @due_date datetime
+  @command varchar(10),
+  -- Estes parâmetros são sempre nulos quando @command=init
+  @cod_empresa int = null,
+  @id_usuario int = null
 as
 begin
-  declare @msg varchar(max)
-  set @msg = concat('@job_id=',@job_id)     raiserror (@msg,10,1) with nowait
-  set @msg = concat('@action=',@action)     raiserror (@msg,10,1) with nowait
-  set @msg = concat('@instance=',@instance) raiserror (@msg,10,1) with nowait
-  set @msg = concat('@due_date=',@due_date) raiserror (@msg,10,1) with nowait
+
+  if @command = 'init' begin
+    -- Agendando este JOB por empresa.
+
+    declare @data datetime = current_timestamp
+    declare @args host.parameter
+
+    -- Criando um lote de parametros para cada empresa.
+    insert into @args (lot, name, value)
+    select DFcod_empresa, '@cod_empresa', DFcod_empresa from TBempresa
+    
+    -- Criando um JOB para cada lote de parametros.
+    exec host.schedule_job
+      @name='emp/{@cod_empresa}',
+      @procid=@@procid,
+      @due_date=@data,
+      @args=@args,
+      @description='Exemplo de JOB para a empresa {@cod_empresa}'
+
+  end if @command = 'exec' begin
+
+    raiserror ('EXEC: @cod_empresa: %d, @id_usuario: %d',10,1,@cod_empresa,@id_usuario) with nowait
+
+  end
 end
 go

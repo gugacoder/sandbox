@@ -28,47 +28,23 @@ select concat([schema],'.',[procedure]) as [procedure]
      , [order]
      , [type]
      , cast(case
-          when [parameter] = '@id_job'        and [type] = 'bigint'           then 1
-          when [parameter] = '@comando'       and [type] = 'varchar(10)'      then 1
-          when [parameter] = '@cod_empresa'   and [type] = 'int'              then 1
-          when [parameter] = '@id_usuario'    and [type] = 'int'              then 1
-          when [parameter] = '@instancia'     and [type] = 'uniqueidentifier' then 1
-          when [parameter] = '@automatico'    and [type] = 'bit'              then 1
-          when [parameter] = '@data_execucao' and [type] = 'datetime'         then 1
-          when [parameter] = '@id_referente'  then 1
-          else 0
+         -- Contempla versão dos parâmetros em portugês para compatibilidade.
+         when [parameter] in ('@command', '@comando')        and [type] != 'varchar(10)'      then 0
+         when [parameter] in ('@instance', '@instancia')     and [type] != 'uniqueidentifier' then 0
+         when [parameter] in ('@job_id', '@id_job')          and [type] != 'bigint'           then 0
+         when [parameter] in ('@due_date', '@data_execucao') and [type] != 'datetime'         then 0
+         else 1
        end as bit) [valid]
-     , case [parameter]
-          when '@id_job' then
-            case when [type] != 'bigint'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como varchar(10) mas foi definido como '+[type]+'.'
-            end
-          when '@comando' then
-            case when [type] != 'varchar(10)'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como varchar(10) mas foi definido como '+[type]+'.'
-            end
-          when '@cod_empresa' then
-            case when [type] != 'int'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como int mas foi definido como '+[type]+'.'
-            end
-          when '@id_usuario' then
-            case when [type] != 'int'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como int mas foi definido como '+[type]+'.'
-            end
-          when '@instancia' then
-            case when [type] != 'uniqueidentifier'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como uniqueidentifier mas foi definido como '+[type]+'.'
-            end
-          when '@automatico' then
-            case when [type] != 'bit'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como bit mas foi definido como '+[type]+'.'
-            end
-          when '@data_execucao' then
-            case when [type] != 'datetime'
-              then 'O parâmetro '+[parameter]+' deveria ser definido como bit mas foi definido como '+[type]+'.'
-            end
-          when '@id_referente' then null
-          else 'O parâmetro '+[parameter]+' não é suportado.'
+     , case
+         -- Contempla versão dos parâmetros em portugês para compatibilidade.
+         when [parameter] in ('@command', '@comando') and [type] != 'varchar(10)'
+           then 'O parâmetro '+[parameter]+' deveria ser definido como varchar(10) mas foi definido como '+[type]+'.'
+         when [parameter] in ('@instance', '@instancia') and [type] != 'uniqueidentifier'
+           then 'O parâmetro '+[parameter]+' deveria ser definido como uniqueidentifier mas foi definido como '+[type]+'.'
+         when [parameter] in ('@job_id', '@id_job') and [type] != 'bigint'
+           then 'O parâmetro '+[parameter]+' deveria ser definido como bigint mas foi definido como '+[type]+'.'
+         when [parameter] in ('@due_date', '@data_execucao') and [type] != 'datetime'
+           then 'O parâmetro '+[parameter]+' deveria ser definido como datetime mas foi definido como '+[type]+'.'
        end [fault]
   from tb_parameters
 go
