@@ -1,5 +1,5 @@
-if type_id('[host].[parameter]') is null begin
-  create type [host].[parameter] as table (
+if type_id('[host].[tp_parameter]') is null begin
+  create type [host].[tp_parameter] as table (
     [name] varchar(100),
     [value] sql_variant,
     [lot] int not null default (1),

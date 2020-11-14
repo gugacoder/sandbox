@@ -1,6 +1,6 @@
-drop procedure if exists host.unschedule_job
+drop procedure if exists [host].[do_unschedule_job]
 go
-create procedure host.unschedule_job
+create procedure [host].[do_unschedule_job]
   -- Identificação do JOB.
   -- Apenas um destes parâmetros deve ser indicado.
     @procedure varchar(100) = null
@@ -8,7 +8,6 @@ create procedure host.unschedule_job
   , @procid int = null
   -- Em caso de @procedure ou @procid múltiplos JOBs podem ser apagados.
   -- Para refinar a pesquisa pode-se indicar qualquer destes parâmetros abaixo.
-  , @when_due_date_is datetime = null
   , @when_name_is varchar(100) = null
   , @when_description_is nvarchar(100) = null
   -- Parâmetros com suporte ao comando LIKE
@@ -42,12 +41,28 @@ begin
     set @procedure = concat(object_schema_name(@procid),'.',object_name(@procid))
   end
 
-  delete from [host].[job]
-   where [procedure] = @procedure
-     and (@when_due_date_is is null or [due_date] = @when_due_date_is)
-     and (@when_name_is is null or [name] = @when_name_is)
-     and (@when_description_is is null or [description] = @when_description_is)
-     and (@when_name_is_like is null or [name] like @when_name_is_like)
-     and (@when_description_is_like is null or [description] like @when_description_is_like)
+  begin try
+
+    begin transaction tx
+
+    delete from [host].[job]
+     where [procedure] = @procedure
+       and (@when_name_is is null or [name] = @when_name_is)
+       and (@when_description_is is null or [description] = @when_description_is)
+       and (@when_name_is_like is null or [name] like @when_name_is_like)
+       and (@when_description_is_like is null or [description] like @when_description_is_like)
+
+    commit transaction tx
+  
+  end try
+  begin catch
+    if @@trancount > 0
+      rollback transaction tx
+    
+    declare @message nvarchar(max) = concat(error_message(),' (linha ',error_line(),')')
+    declare @severity int = error_severity()
+    declare @state int = error_state()
+    raiserror (@message, @severity, @state);
+  end catch
 end
 go

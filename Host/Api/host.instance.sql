@@ -8,7 +8,10 @@ if object_id('[host].[instance]') is null begin
     [on] bit not null default (1),
     [last_seen] datetime not null default (current_timestamp)
   )
+end
+go
 
+if not exists (select 1 from sys.indexes where name = 'ix__host_instance__guid') begin
   create index ix__host_instance__guid
       on [host].[instance] ([guid])
 end
