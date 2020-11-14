@@ -10,7 +10,7 @@ create procedure [host].[do_schedule_job]
   -- Data para uma única execução do JOB.
   -- Quando indicada os demais parametros de agendamento seguintes
   -- não devem ser indicados.
-  , @due_time datetime = null
+  , @due_date datetime = null
     -- seg=1
     -- ter=2
     -- qua=4
@@ -26,19 +26,60 @@ create procedure [host].[do_schedule_job]
   , @repeat bit = null
     -- Quando sequencial o intervalo de repeticao é contado somente
     -- depois da execução anterior ter terminado.
-  , @sequential bit = null
+  , @delayed bit = null
   , @start_date datetime = null
   , @end_date datetime = null
   , @args [host].[tp_parameter] readonly
+  -- Opções de execução
+    -- Desativa a emissão da lista de JOBs gerados no fim da procedure.
+  , @no_output bit = 0
 as
 begin
   set nocount on
 
   declare @job_id int
   declare @lot int
-  declare @name_template nvarchar(100) = coalesce(@name,'job')
-  declare @description_template nvarchar(400) = @description
+  declare @name_template nvarchar(100)
+  declare @description_template nvarchar(400)
   declare @tb_job table ([id] int)
+  declare @id int
+
+  set @name = coalesce(@name, 'default')
+  set @name_template = @name
+  set @description_template = @description_template
+
+  if @due_date is not null begin
+    if coalesce(@days,0) != 0
+    or coalesce(@time,'00:00:00') != '00:00:00'
+    or coalesce(@repeat,0) != 0
+    or coalesce(@delayed,0) != 0
+    or @start_date is not null
+    or @end_date is not null
+    begin
+      raiserror ('Quando `@due_date` é indicado os demais parâmetros de agendamento não devem ser indicados: @days, @time, @repeat, @delayed, @start_date, @end_date',16,1) with nowait
+      return
+    end
+  end else begin
+    set @time = coalesce(@time,'00:00:00')
+    set @repeat = coalesce(@repeat,0)
+    set @delayed = coalesce(@delayed,0)
+
+    if @time is null begin
+      raiserror ('Pelo menos o parâmetro `@time` deve ser indicado.',16,1) with nowait
+      return
+    end
+    if @repeat = 1 and @delayed = 0 and @time = '00:00:00' begin
+      raiserror ('Quando `@repeat` é indicado mas `@delayed` não é indicado, então, é esperado que o intervalo `@time` seja diferente de `00:00:00`.',16,1) with nowait
+      return
+    end
+
+    if @repeat = 0 and @delayed = 1 begin
+      set @repeat = 1
+    end
+    if coalesce(@days,0) = 0 begin
+      set @days = 127
+    end
+  end
 
   if @procid is not null begin
     set @procedure = concat(object_schema_name(@procid),'.',object_name(@procid))
@@ -90,27 +131,29 @@ begin
      where [lot] = @lot
 
     begin try
-      begin transaction x
+      begin transaction tx
 
       merge into [host].[job] as target
       using (values (
           @name
         , @procedure
         , @description
-        , @days
-        , @time
-        , @repeat
-        , @sequential
+        , @due_date
+        , coalesce(@days,0)
+        , coalesce(@time,'00:00:00')
+        , coalesce(@repeat,0)
+        , coalesce(@delayed,0)
         , @start_date
         , @end_date
       )) as source(
               [name]
             , [procedure]
             , [description]
+            , [due_date]
             , [days]
             , [time]
             , [repeat]
-            , [sequential]
+            , [delayed]
             , [start_date]
             , [end_date]
           )
@@ -119,10 +162,12 @@ begin
       when matched then
         update set
             [description] = source.[description]
+          , [disabled_at] = null
+          , [due_date] = source.[due_date]
           , [days] = source.[days]
           , [time] = source.[time]
           , [repeat] = source.[repeat]
-          , [sequential] = source.[sequential]
+          , [delayed] = source.[delayed]
           , [start_date] = source.[start_date]
           , [end_date] = source.[end_date]
       when not matched by target then
@@ -130,10 +175,11 @@ begin
             [name]
           , [procedure]
           , [description]
+          , [due_date]
           , [days]
           , [time]
           , [repeat]
-          , [sequential]
+          , [delayed]
           , [start_date]
           , [end_date]
           )
@@ -141,10 +187,11 @@ begin
             source.[name]
           , source.[procedure]
           , source.[description]
+          , source.[due_date]
           , source.[days]
           , source.[time]
           , source.[repeat]
-          , source.[sequential]
+          , source.[delayed]
           , source.[start_date]
           , source.[end_date]
           )
@@ -163,6 +210,7 @@ begin
       commit transaction tx
     end try
     begin catch
+    select @@trancount
       if @@trancount > 0
         rollback transaction tx
       
@@ -176,7 +224,26 @@ begin
     select @lot = min([lot]) from @definition where [lot] > @lot
   end
 
+  --
+  -- Calculando a data da primeira execução dos JOBs
+  --
+  select @id = min([id]) from @tb_job
+  while @id is not null begin
+    begin try
+      exec [host].[do_computed_next_run] @id
+      select @id = min([id]) from @tb_job where [id] > @id
+    end try begin catch
+      set @message = concat(error_message(),' (linha ',error_line(),')')
+      raiserror ('O JOB foi agendado mas a data de sua primeira execução não pôde ser computada. (job_id = %d) - Causa: %s',
+        10,1,@job_id,@message) with nowait
+    end catch
+  end
+
+  --
   -- Retornando os JOBs criados
-  select [id] as [job_id] from @tb_job
+  --
+  if @no_output = 0 begin
+    select [id] as [job_id] from @tb_job
+  end
 end
 go

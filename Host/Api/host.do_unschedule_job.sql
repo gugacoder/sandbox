@@ -8,8 +8,7 @@ create procedure [host].[do_unschedule_job]
   , @procid int = null
   -- Em caso de @procedure ou @procid múltiplos JOBs podem ser apagados.
   -- Para refinar a pesquisa pode-se indicar qualquer destes parâmetros abaixo.
-  , @when_name_is varchar(100) = null
-  , @when_description_is nvarchar(100) = null
+  , @name varchar(100) = null
   -- Parâmetros com suporte ao comando LIKE
   , @when_name_is_like varchar(100) = null
   , @when_description_is_like nvarchar(100) = null
@@ -47,8 +46,7 @@ begin
 
     delete from [host].[job]
      where [procedure] = @procedure
-       and (@when_name_is is null or [name] = @when_name_is)
-       and (@when_description_is is null or [description] = @when_description_is)
+       and (@name is null or [name] = @name)
        and (@when_name_is_like is null or [name] like @when_name_is_like)
        and (@when_description_is_like is null or [description] like @when_description_is_like)
 

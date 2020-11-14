@@ -54,7 +54,7 @@ begin
 
   exec sp_executesql
       @sql
-    , N'@params [host].[parameter] readonly'
+    , N'@params [host].[tp_parameter] readonly'
     , @params
 end
 go
