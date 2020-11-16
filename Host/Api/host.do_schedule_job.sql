@@ -1,7 +1,7 @@
 drop procedure if exists [host].[do_schedule_job]
 go
 create procedure [host].[do_schedule_job]
-    @name varchar(100)
+    @name varchar(100) = null
   -- Um e apenas um destes três deve ser informado.
   , @procedure varchar(100) = null
   , @procid int = null
@@ -46,7 +46,7 @@ begin
 
   set @name = coalesce(@name, 'default')
   set @name_template = @name
-  set @description_template = @description_template
+  set @description_template = @description
 
   if @due_date is not null begin
     if coalesce(@days,0) != 0

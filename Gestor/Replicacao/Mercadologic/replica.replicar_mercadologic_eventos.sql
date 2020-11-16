@@ -70,8 +70,9 @@ begin
               inner join replica.texto as esquema on esquema.id = evento.id_esquema
               inner join replica.texto as tabela  on tabela .id = evento.id_tabela
               inner join replica.texto as origem  on origem .id = evento.id_origem
-              where evento.id between '+@ultimo_id_evento+' and '+@ultimo_id_evento+'+'+@maximo_ids_por_vez+'
-              order by evento.id;''
+              where evento.id >= '+@ultimo_id_evento+'
+              order by evento.id
+              limit '+@maximo_ids_por_vez+';''
            ) as t'
   insert into @tb_evento
     exec sp_executesql @sql

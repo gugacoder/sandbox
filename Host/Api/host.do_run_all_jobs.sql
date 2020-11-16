@@ -43,7 +43,6 @@ begin
     end try begin catch
       set @message = concat(error_message(),' (linha ',error_line(),')')
       raiserror ('Falha inicializando JOB. (procedure = %s) - Causa: %s',10,1,@procedure,@message) with nowait
-      return
     end catch
       
     select @procedure = min([procedure]) from @tb_procedure where [procedure] > @procedure
