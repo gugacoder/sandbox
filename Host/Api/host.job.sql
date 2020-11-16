@@ -36,8 +36,3 @@ if object_id('[host].[job]') is null begin
 end
 go
 
-/*
-drop table host.job_history
-drop table host.job_parameter
-drop table host.job
-*/
