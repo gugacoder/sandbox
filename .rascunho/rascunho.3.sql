@@ -1,3 +1,5 @@
+
+
 select
 (select count(1) from mlogic.vw_replica_cupomfiscal with (nolock) where dataabertura > '2020-11-14') as [(3889) cupomfiscal],
 (select count(1) from mlogic.vw_replica_itemcupomfiscal with (nolock) where idcupomfiscal in(
