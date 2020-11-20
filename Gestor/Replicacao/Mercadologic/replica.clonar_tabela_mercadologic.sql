@@ -107,8 +107,14 @@ begin
     ) as t(tipo_postgres, tipo_sqlserver)
   )
   update campo
-     set tipo_mssql = case when campo.tamanho is not null
-           then concat(tipo.tipo_sqlserver, '(', campo.tamanho, ')') 
+     set tipo_mssql =
+         case
+           when campo.nome like 'xml[_]%'
+             then 'xml'
+           when tipo.tipo_sqlserver like '%varchar'
+             then concat(tipo.tipo_sqlserver, '(max)') 
+           when campo.tamanho is not null
+             then concat(tipo.tipo_sqlserver, '(', campo.tamanho, ')') 
            else tipo.tipo_sqlserver
          end
     from @tb_campo as campo

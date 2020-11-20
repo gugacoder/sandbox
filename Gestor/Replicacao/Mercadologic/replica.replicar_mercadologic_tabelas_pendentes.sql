@@ -56,10 +56,7 @@ begin
      where evento.id_evento = @id_evento
 
     exec @sucesso=replica.replicar_mercadologic_tabela
-         @cod_empresa
-       , @id_evento
-       , @tabela
-       , @chave_tabela
+         @id_evento
        , @provider
        , @driver
        , @servidor

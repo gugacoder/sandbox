@@ -2,6 +2,8 @@
 -- PROCEDURE dbo.monitorar_integracao
 --
 
+use DBmercadologic;
+
 /*
 create index ix__replica_cupomfiscal__dataabertura
     on replica.cupomfiscal (dataabertura)
@@ -13,9 +15,9 @@ create index ix__replica_itemcupomfiscal__idcupomfiscal
     on replica.itemcupomfiscal (idcupomfiscal)
 */
 
-drop procedure if exists dbo.monitorar_integracao_empresa
+drop procedure if exists replica._tmp_monitorar_integracao_de_venda_por_empresa
 go
-create procedure dbo.monitorar_integracao_empresa (
+create procedure replica._tmp_monitorar_integracao_de_venda_por_empresa (
     @cod_empresa int
   , @data_inicial date = null
   -- Parâmetros opcionais de conectividade.
@@ -73,9 +75,9 @@ begin
 end
 go
 
-drop procedure if exists dbo.monitorar_integracao
+drop procedure if exists replica._tmp_monitorar_integracao_de_venda
 go
-create procedure dbo.monitorar_integracao (
+create procedure replica._tmp_monitorar_integracao_de_venda (
     @cod_empresas varchar(100) = null
   , @data_inicial date = null
   -- Parâmetros opcionais de conectividade.
@@ -106,33 +108,47 @@ begin
   while @cod_empresa is not null begin
     
     insert into @tb_remoto
-      exec dbo.monitorar_integracao_empresa @cod_empresa
+      exec replica._tmp_monitorar_integracao_de_venda_por_empresa @cod_empresa, @data_inicial
     
     select @cod_empresa = min(cod_empresa) from @tb_empresa where cod_empresa > @cod_empresa
   end
 
   ; with
   tb_total_remoto as (
-    select count(distinct id_cupom) as cupom
+    select cod_empresa
+         , count(distinct id_cupom) as cupom
          , count(distinct id_item_cupom) as item_cupom
       from @tb_remoto
+     group by cod_empresa
   ),
   tb_total_local as (
-    select count(distinct replica.cupomfiscal.id) as cupom
+    select replica.cupomfiscal.cod_empresa
+         , count(distinct replica.cupomfiscal.id) as cupom
          , count(distinct replica.itemcupomfiscal.id) as item_cupom
       from replica.cupomfiscal
       left join replica.itemcupomfiscal
              on itemcupomfiscal.idcupomfiscal = replica.cupomfiscal.id
-     where replica.cupomfiscal.dataabertura >= cast(current_timestamp as date)
+     where replica.cupomfiscal.dataabertura >= @data_inicial
+     group by replica.cupomfiscal.cod_empresa
   )
+  select tb_empresa.cod_empresa
+       , tb_total_local.cupom as cupom_director
+       , tb_total_remoto.cupom as cupom_concentrador
+       , tb_total_local.item_cupom as item_cupom_director
+       , tb_total_remoto.item_cupom as item_cupom_concentrador
+    from @tb_empresa as tb_empresa
+    left join tb_total_local
+           on tb_total_local.cod_empresa = tb_empresa.cod_empresa
+    left join tb_total_remoto
+           on tb_total_remoto.cod_empresa = tb_empresa.cod_empresa
+
+/*
   select @cod_empresa as cod_empresa, 'director' as origem, * from tb_total_local
   union
   select @cod_empresa as cod_empresa, 'concentrador' as origem, * from tb_total_remoto
-
+*/
 end
 go
-
-exec dbo.monitorar_integracao '4'
 
 /*
 
