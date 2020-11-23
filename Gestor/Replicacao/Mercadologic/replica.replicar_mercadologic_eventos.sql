@@ -51,7 +51,8 @@ begin
   )
 
   select @ultimo_id_evento = coalesce(max(id_remoto), 0)
-    from replica.evento
+    from replica.evento with (nolock)
+   where cod_empresa = @cod_empresa
 
   set @sql = '
     select *

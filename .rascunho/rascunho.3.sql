@@ -6,3 +6,7 @@ exec replica._tmp_monitorar_integracao_de_venda
 -- select data, * from replica.vw_evento order by replica.vw_evento.data desc
 
 
+drop table replica.evento
+drop view replica.vw_evento
+
+select * from INFORMATION_SCHEMA.TABLES where table_schema = 'replica'

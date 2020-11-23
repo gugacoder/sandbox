@@ -42,7 +42,7 @@ begin
   declare @sucesso int
   
   select @id_evento = min(id_evento)
-    from replica.evento
+    from replica.evento with (nolock)
    where cod_empresa = @cod_empresa
      and replicado = 0
 
@@ -70,7 +70,7 @@ begin
      where id_evento = @id_evento
   
     select @id_evento = min(id_evento)
-      from replica.evento
+      from replica.evento with (nolock)
      where cod_empresa = @cod_empresa
        and replicado = 0
        and id_evento > @id_evento

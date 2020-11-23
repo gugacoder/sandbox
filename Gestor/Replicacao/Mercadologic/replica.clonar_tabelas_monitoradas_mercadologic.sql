@@ -52,8 +52,8 @@ begin
            ) as t'
 
   insert into @tb_tabela (esquema, tabela)
-  exec sp_executesql @sql
-
+    exec sp_executesql @sql
+  
   declare @id int, @tabela varchar(100)
 
   select @id = min(id) from @tb_tabela
@@ -75,5 +75,5 @@ begin
   end
 end
 go
--- exec replica.clonar_tabelas_monitoradas_mercadologic 7
+-- exec replica.clonar_tabelas_monitoradas_mercadologic 1
 

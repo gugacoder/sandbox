@@ -98,12 +98,16 @@ begin
     id_item_cupom int
   )
 
-  set @data_inicial = cast(coalesce(@data_inicial, current_timestamp) as date)
-
+  -- Elencando as empresas
   if @cod_empresas is not null
     insert into @tb_empresa select valor from replica.SPLIT(@cod_empresas,',')
   else
     insert into @tb_empresa select DFcod_empresa from replica.vw_empresa
+
+  -- Corrigindo a data se necessario
+  select @data_inicial = cast(coalesce(@data_inicial, min(data), current_timestamp) as date)
+    from replica.evento
+   where cod_empresa in (select cod_empresa from @tb_empresa)
 
   select @cod_empresa = min(cod_empresa) from @tb_empresa
   while @cod_empresa is not null begin
@@ -167,5 +171,5 @@ begin
 end
 go
 
-exec replica._tmp_monitorar_integracao_de_venda --4, '2020-11-20'
+exec replica._tmp_monitorar_integracao_de_venda -- '1,4' --@data_inicial='2020-11-20'
 

@@ -140,7 +140,7 @@ begin
   --
   -- Calculando a data da próxima execução do JOB
   --
-  exec [host].[do_computed_next_run] @job_id
+  exec [host].[do_compute_next_run] @job_id
 
 end
 go

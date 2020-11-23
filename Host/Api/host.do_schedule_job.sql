@@ -230,7 +230,7 @@ begin
   select @id = min([id]) from @tb_job
   while @id is not null begin
     begin try
-      exec [host].[do_computed_next_run] @id
+      exec [host].[do_compute_next_run] @id
       select @id = min([id]) from @tb_job where [id] > @id
     end try begin catch
       set @message = concat(error_message(),' (linha ',error_line(),')')

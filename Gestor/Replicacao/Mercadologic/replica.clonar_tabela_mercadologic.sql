@@ -80,7 +80,7 @@ begin
            ) as t'
 
   insert into @tb_campo (nome, tipo_pgsql, tamanho, aceita_nulo, posicao)
-  exec sp_executesql @sql
+    exec sp_executesql @sql
 
   ; with tipo as (
     select * from ( values 

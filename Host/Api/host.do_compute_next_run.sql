@@ -1,6 +1,6 @@
-drop procedure if exists [host].[do_computed_next_run]
+drop procedure if exists [host].[do_compute_next_run]
 go
-create procedure [host].[do_computed_next_run]
+create procedure [host].[do_compute_next_run]
   @job_id int
 as
 begin
@@ -120,6 +120,7 @@ begin
 
       return
     end
+    
     -- Construindo uma tabela com as datas futuras dos dias da semana cadastrados no JOB
     declare @date_table table (
       [day] int,
@@ -161,6 +162,7 @@ begin
         from (select cast([date] as datetime) + @time from @date_table) as t([date])
        where [date] >= current_timestamp
 
+    
     end
   end
 

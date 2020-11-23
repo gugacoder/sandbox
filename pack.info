@@ -1,44 +1,44 @@
 #
-# Definição do pacote
+# Definiï¿½ï¿½o do pacote
 #
 
 # Identificador do pacote.
-#   Em geral o artefato será membro de um destes grupos:
+#   Em geral o artefato serï¿½ membro de um destes grupos:
 #   - Processa, para artefatos criados pela Processa
 #   - 3rd-party, para artefatos de terceiros
 #   Use nomes em PascalCase.
-#   O número da versão seguem o formato:
+#   O nï¿½mero da versï¿½o seguem o formato:
 #   - major.minor.patch
 #   conforme definido pelo `semver`
-#   A última parte, `patch`, é comumente omitida e definida
-#   no ato do empacotamento da distribuição pelo comando
+#   A ï¿½ltima parte, `patch`, ï¿½ comumente omitida e definida
+#   no ato do empacotamento da distribuiï¿½ï¿½o pelo comando
 #     pack build --set-version x.x.0
 #   Veja mais detalhes digitando:
 #     pack --help
 pack
-  Processa/ScriptPack-Mlogic.Gestor/1.0.0
+  Processa/ScriptPack-Mlogic.Gestor/1.0.1
 
-# Declaração das dependências do projeto.
-#   Uma dependência por linha.
-#   A versão pode ser definida em intervalos:
+# Declaraï¿½ï¿½o das dependï¿½ncias do projeto.
+#   Uma dependï¿½ncia por linha.
+#   A versï¿½o pode ser definida em intervalos:
 #   - de um inicio a um fim
-#       Qualquer versão maior ou igual ao início e menor ou igual ao fim.
+#       Qualquer versï¿½o maior ou igual ao inï¿½cio e menor ou igual ao fim.
 #       Exemplos:
-#         Versão          Intervalo
+#         Versï¿½o          Intervalo
 #         --------------  -------------------
 #         1 - 2           >= 1.0.0 e <= 2.0.0
 #         1.2 - 3.4       >= 1.2.0 e <= 3.4.0
 #         1.2.3 - 3.4.5   >= 1.2.3 e <= 3.4.5
-#   - igual, até ou a partir de
-#       Qualquer versão igual a indicada, até a indicada ou a partir da indicada,
+#   - igual, atï¿½ ou a partir de
+#       Qualquer versï¿½o igual a indicada, atï¿½ a indicada ou a partir da indicada,
 #       segundo os operadores:
-#         =   Igual à versão indicada.
-#         >   Maior que a versão indicada.
-#         <   Menor que a versão indicada.
-#         >=  Maior ou igual à versão indicada.
-#         <=  Menor ou igual à versão indicada.
+#         =   Igual ï¿½ versï¿½o indicada.
+#         >   Maior que a versï¿½o indicada.
+#         <   Menor que a versï¿½o indicada.
+#         >=  Maior ou igual ï¿½ versï¿½o indicada.
+#         <=  Menor ou igual ï¿½ versï¿½o indicada.
 #       Exemplos:
-#         Versão          Intervalo
+#         Versï¿½o          Intervalo
 #         --------------  -------------------
 #         =1              = 1.0.0
 #         =1.2            = 1.2.0
@@ -47,10 +47,10 @@ pack
 #         >=1.2           >= 1.2.0
 #         <=1.2.3         <= 1.2.3
 #   - ^0.0.0
-#       Qualquer versão superior à versão declarada
-#       até a última versão do primeiro digito não zero.
+#       Qualquer versï¿½o superior ï¿½ versï¿½o declarada
+#       atï¿½ a ï¿½ltima versï¿½o do primeiro digito nï¿½o zero.
 #       Exemplos:
-#         Versão          Intervalo
+#         Versï¿½o          Intervalo
 #         --------------  -------------------
 #         ^1              >= 1.0.0 e < 2.0.0
 #         ^1.2            >= 1.2.0 e < 2.0.0
@@ -58,10 +58,10 @@ pack
 #         ^0.1.2          >= 0.1.2 e < 0.2.0
 #         ^0.0.1          >= 0.0.1 e < 0.0.2
 #   - ~0.0.0
-#       Qualquer versão compatível com a versão declarada.
-#       A compatibilidade é definida no nível do `patch`.
+#       Qualquer versï¿½o compatï¿½vel com a versï¿½o declarada.
+#       A compatibilidade ï¿½ definida no nï¿½vel do `patch`.
 #       Exemplos:
-#         Versão          Intervalo
+#         Versï¿½o          Intervalo
 #         --------------  -------------------
 #         ~1              >= 1.0.0 e < 2.0.0
 #         ~1.2            >= 1.2.0 e < 1.3.0
@@ -71,24 +71,24 @@ pack
 deps
   # Pacote/Artefato/Versao
   
-# Relação dos artefatos que devem ser empacotados e publicados.
-# Os caminhos são relativos à pasta de distribuição `Dist` ou àquela
-# definida nas configurações ou na linha de comando.
+# Relaï¿½ï¿½o dos artefatos que devem ser empacotados e publicados.
+# Os caminhos sï¿½o relativos ï¿½ pasta de distribuiï¿½ï¿½o `Dist` ou ï¿½quela
+# definida nas configuraï¿½ï¿½es ou na linha de comando.
 # Curingas:
 #   `*`  pode ser usado para indicar qualquer quantidade de caracter
-#        na posição.
+#        na posiï¿½ï¿½o.
 #   `**` pode ser usado para indicar pastas e subpastas.
 # Exemplos de empacotamentos:
-# Todos os arquivos da pasta, não considerando subpastas:
+# Todos os arquivos da pasta, nï¿½o considerando subpastas:
 #   dist
 #     *
 # Todos os arquivos da pasta e das subpastas:
 #   dist
 #     **
-# Todos os arquivos das subpastas, não considerando a própria pasta:
+# Todos os arquivos das subpastas, nï¿½o considerando a prï¿½pria pasta:
 #   dist
 #     */**
-# Todos os executáveis e todas as DLLs da pasta e subpastas:
+# Todos os executï¿½veis e todas as DLLs da pasta e subpastas:
 #   dist
 #     **/*.exe
 #     **/*.dll
