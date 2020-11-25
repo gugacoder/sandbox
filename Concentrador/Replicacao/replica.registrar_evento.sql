@@ -16,23 +16,37 @@ begin
            (select id from replica.texto where texto = TG_TABLE_SCHEMA)
          , (select id from replica.texto where texto = TG_TABLE_NAME)
          , (select chave from (select old.*) as t(chave))
-         , LEFT(TG_OP,1)
+         , 'D'
          , (select id from replica.texto where texto = current_setting('application_name'))
          , old.xmin
            );
     return old;
-  else
+  elsif tg_op = 'INSERT' then
     insert into replica.evento (id_esquema, id_tabela, chave, acao, id_origem, versao)
     values (
            (select id from replica.texto where texto = TG_TABLE_SCHEMA)
          , (select id from replica.texto where texto = TG_TABLE_NAME)
          , (select chave from (select new.*) as t(chave))
-         , LEFT(TG_OP,1)
+         , 'I'
          , (select id from replica.texto where texto = current_setting('application_name'))
          , new.xmin
            );
     return new;
+  elsif tg_op = 'UPDATE' then
+    -- Ignorando UPDATE caso nenhum campo tenha sido realmente alterado.
+    -- Se algum campo tiver sido alterado entaum o UNION entre OLD E NEW conterá dois registros.
+    if 2 = (select count(1) from (select old.* union select new.*) as t) then
+      insert into replica.evento (id_esquema, id_tabela, chave, acao, id_origem, versao)
+      values (
+             (select id from replica.texto where texto = TG_TABLE_SCHEMA)
+           , (select id from replica.texto where texto = TG_TABLE_NAME)
+           , (select chave from (select new.*) as t(chave))
+           , 'U'
+           , (select id from replica.texto where texto = current_setting('application_name'))
+           , new.xmin
+             );
+    end if;
+    return new;
   end if;
 end
 $$ language plpgsql;
-

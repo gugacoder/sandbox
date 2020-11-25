@@ -14,7 +14,8 @@ begin
   end if;
   execute '
     drop trigger if exists tg_' || tabela || ' on ' || esquema || '.' || tabela || ';
-    create trigger tg_' || tabela || '
+    drop trigger if exists tg_replicar_' || tabela || ' on ' || esquema || '.' || tabela || ';
+    create trigger tg_replicar_' || tabela || '
     after insert or update or delete
     on ' || esquema || '.' || tabela || '
     for each row

@@ -1,10 +1,11 @@
 --
--- PROCEDURE replica.replicar_mercadologic
+-- PROCEDURE replica.executar_sql_remota
 --
-drop procedure if exists replica.replicar_mercadologic
+drop procedure if exists replica.executar_sql_remota
 go
-create procedure replica.replicar_mercadologic (
+create procedure replica.executar_sql_remota (
     @cod_empresa int
+  , @sql nvarchar(max)
   -- Parâmetros opcionais de conectividade.
   -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
   , @provider nvarchar(50) = null
@@ -16,6 +17,8 @@ create procedure replica.replicar_mercadologic (
   , @senha nvarchar(50) = null
 ) as
 begin
+  declare @status int
+
   if @provider is null
   or @driver   is null
   or @servidor is null
@@ -36,37 +39,16 @@ begin
      where DFcod_empresa = @cod_empresa
   end
 
-  exec replica.clonar_tabelas_monitoradas_mercadologic
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
+  set @sql = concat(
+   'select *
+      from openrowset(
+           ''',@provider,'''
+         , ''Driver=',@driver,';Server=',@servidor,';Port=5432;Database=',@database,';Uid=',@usuario,';Pwd=',@senha,';''
+         , ''select * from (',@sql,') as t''
+           ) as t')
 
-  exec replica.replicar_mercadologic_eventos
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
-
-  exec replica.replicar_mercadologic_tabelas_pendentes
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
-
-  raiserror(N'REPLICAÇÃO DO CONCENTRADOR NO GESTOR CONCLUÍDA.',10,1) with nowait
+  exec @status = sp_executesql @sql
+  
+  return @status
 end
 go
-

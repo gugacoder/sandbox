@@ -12,7 +12,6 @@ begin
   declare @tabela varchar(100)
   declare @tabela_replica varchar(100)
   declare @view_replica varchar(100)
-  declare @view_replica_historico varchar(100)
   declare @sql nvarchar(max)
 
   if @tabela_mercadologic like '%.%' begin
@@ -31,27 +30,16 @@ begin
     set @view_replica = concat('mlogic.vw_replica_',@esquema,'_',@tabela)
   end
 
-  set @view_replica_historico = @view_replica + '_historico'
-
   if object_id(@DBdirector+'.'+@view_replica) is null begin
     set @sql = '
       use '+@DBdirector+'
       exec sp_executesql N''
         create view '+@view_replica+'
-        as select * from '+@DBmercadologic+'.'+@tabela_replica+' where historico = 0'''
+        as select * from '+@DBmercadologic+'.'+@tabela_replica+' where tp_evento != ''D'''''
     exec sp_executesql @sql
     raiserror(N'VIEW DE RÉPLICA CRIADA: %s.%s',10,1,@DBdirector,@view_replica) with nowait
   end
 
-  if object_id(@DBdirector+'.'+@view_replica_historico) is null begin
-    set @sql = '
-      use '+@DBdirector+'
-      exec sp_executesql N''
-        create view '+@view_replica_historico+'
-        as select * from '+@DBmercadologic+'.'+@tabela_replica+''''
-    exec sp_executesql @sql
-    raiserror(N'VIEW DE RÉPLICA HISTÓRICA CRIADA: %s.%s',10,1,@DBdirector,@view_replica_historico) with nowait
-  end
-
 end
 go
+exec replica.mapear_view_director  5, 'cupomfiscal'

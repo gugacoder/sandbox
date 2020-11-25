@@ -2,10 +2,10 @@
 -- VIEW replica.vw_tabela_monitorada
 --
 create or replace view replica.vw_tabela_monitorada as 
-select distinct 
-       esquema.texto as esquema
-     , tabela.texto as tabela
-  from replica.evento
- inner join replica.texto as esquema on esquema.id = evento.id_esquema
- inner join replica.texto as tabela  on tabela .id = evento.id_tabela;
-
+select distinct
+       cast(event_object_schema as character varying) as esquema
+     , cast(substring(trigger_name,4) as character varying) as tabela
+  from information_schema.triggers
+ where trigger_name like 'tg_%'
+   and action_statement = 'EXECUTE PROCEDURE replica.registrar_evento()'
+;

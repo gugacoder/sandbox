@@ -48,6 +48,7 @@ begin
      where DFcod_empresa = @cod_empresa
   end
 
+  declare @tp_evento char
   declare @esquema_replica varchar(100)
   declare @tabela_replica varchar(100)
   declare @campo_chave varchar(100)
@@ -59,6 +60,13 @@ begin
   declare @campo_anterior varchar(100)
   declare @sql nvarchar(max)
   declare @status int
+  declare @message nvarchar(max)
+  declare @severity int
+  declare @state int
+
+  select @tp_evento = acao
+    from replica.evento
+   where id_evento = @id_evento
 
   set @esquema_replica = 'replica'
   if @esquema = 'public' begin
@@ -67,6 +75,12 @@ begin
     set @tabela_replica = concat(@esquema,'_',@tabela)
   end
 
+  --
+  -- O campo `cod_empresa` é usado para determinar o fim do cabeçalho da tabela e
+  -- início dos campos replicados.
+  -- O próximo campo depois de `cod_empresa` é considerado o campo chave da tabela
+  -- no mercadologic.
+  --
   ; with colunas as (
     select sys.columns.column_id
          , sys.columns.name
@@ -79,7 +93,7 @@ begin
      where sys.schemas.name = 'replica'
        and sys.objects.name = @tabela_replica
   )
-  select @castings = case when column_id > (select column_id from colunas where name = 'historico') then
+  select @castings = case when column_id > (select column_id from colunas where name = 'cod_empresa') then
            concat(@castings,',',
              case [type] when 'xml'
                then concat('concat(',
@@ -108,7 +122,7 @@ begin
              end
            )
          end
-       , @selecting = case when column_id > (select column_id from colunas where name = 'historico') then
+       , @selecting = case when column_id > (select column_id from colunas where name = 'cod_empresa') then
            concat(@selecting,',',
              case
                when [type] = 'xml'
@@ -143,8 +157,10 @@ begin
        , @campos = concat(@campos,',', name)
        , @campos_remotos = concat(@campos_remotos,',',name)
        , @set_campos = concat(@set_campos,',',name,'=tabela_remota.',name)
+       -- Determinando o campo chave.
+       -- O campo chave é o campo logo depois do `cod_empresa`.
        , @campo_chave = case @campo_anterior
-           when 'historico' then name
+           when 'cod_empresa' then name
            else @campo_chave
          end
        , @campo_anterior = name
@@ -159,11 +175,11 @@ begin
 
   raiserror(N'REPLICANDO: %s.%s=%i',10,1,
     @tabela_replica,@campo_chave,@valor_chave) with nowait
-      
+  
   set @sql = concat(
    'select ',cast(@id_evento as varchar(100)),' as id_evento
+         , ''',@tp_evento,''' as tp_evento
          , ',cast(@cod_empresa as varchar(100)),' as cod_empresa
-         , 0 as historico
          , ',@castings,'
       into #tb_registro
       from openrowset(
@@ -176,29 +192,50 @@ begin
              ) as t;''
            ) as t
     ;
-    update ',@esquema_replica,'.',@tabela_replica,'
-       set historico = case when exists (select 1 from #tb_registro)
-             then  1  /* registro substituído por um mais novo na origem. */
-             else -1  /* registro apagado na origem */
-           end
-     where cod_empresa = ',cast(@cod_empresa as varchar(100)),'
-       and ',@campo_chave,' = ',cast(@valor_chave as varchar(100)),'
-    ;
-    merge ',@esquema_replica,'.',@tabela_replica,' as tabela
+    merge ',@esquema_replica,'.',@tabela_replica,' as tabela_local
     using #tb_registro as tabela_remota
-       on tabela.id_evento = ',cast(@id_evento as varchar(100)),'
+       on tabela_local.cod_empresa = tabela_remota.cod_empresa
+      and tabela_local.',@campo_chave,' = tabela_remota.',@campo_chave,'
      when matched then
           update set ',@set_campos,'
      when not matched by target then
           insert (',@campos,')
           values (',@campos_remotos,');')
 
-  exec @status = sp_executesql @sql
-  
-  if @status = 0 begin
-    raiserror(N'REGISTRO DO CONCENTRADOR REPLICADO NO GESTOR: %s.%s=%i',10,1,
-      @tabela_replica,@campo_chave,@valor_chave) with nowait
-  end
+  begin try
+
+    exec @status = sp_executesql @sql
+    
+    update replica.evento
+       set status = case @status when 0 then 1 else -1 end
+         , falha = null
+         , falha_detalhada = null
+     where id_evento = @id_evento
+
+    if @status = 0 begin
+      raiserror(N'REGISTRO DO CONCENTRADOR REPLICADO NO GESTOR: %s.%s=%i',10,1,
+        @tabela_replica,@campo_chave,@valor_chave) with nowait
+    end else begin
+      raiserror(N'FALHOU A TENTATIVA DE REPLICAR UM REGISTRO DO CONCENTRADOR NO GESTOR: %s.%s=%i',16,1,
+        @tabela_replica,@campo_chave,@valor_chave) with nowait
+    end
+
+  end try
+  begin catch
+    set @status = -1
+    
+    update replica.evento
+       set status = -1
+         , falha = error_message()
+         , falha_detalhada = null
+     where id_evento = @id_evento
+
+    set @message = concat(error_message(),' (linha ',error_line(),')')
+    set @severity = error_severity()
+    set @state = error_state()
+    raiserror (@message, @severity, @state) with nowait
+
+  end catch
   
   return @status
 end

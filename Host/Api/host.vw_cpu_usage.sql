@@ -17,7 +17,7 @@ with usage as (
 select 'CPU' as Counter
      , concat(100 - cpu_idle,'%') as Usage from usage
 union all
-select 'CPU by MSSQL'
+select 'CPU by SQLServer'
      , concat(cpu_sql,'%') from usage
 go
 -- select * from host.vw_cpu_usage

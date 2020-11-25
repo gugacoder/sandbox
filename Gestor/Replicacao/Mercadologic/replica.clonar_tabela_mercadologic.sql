@@ -40,6 +40,7 @@ begin
   declare @esquema varchar(100)
   declare @tabela varchar(100)
   declare @tabela_replica varchar(100)
+  declare @view_replica varchar(100)
   declare @sql nvarchar(max)
   declare @tb_campo table (
     nome varchar(100),
@@ -60,8 +61,10 @@ begin
 
   if @esquema = 'public' begin
     set @tabela_replica = concat('replica.',@tabela)
+    set @view_replica = concat('replica.vw_',@tabela)
   end else begin
     set @tabela_replica = concat('replica.',@esquema,'_',@tabela)
+    set @view_replica = concat('replica.vw_',@esquema,'_',@tabela)
   end
 
   set @sql = '
@@ -124,18 +127,19 @@ begin
   --
   -- Construindo a tabela de replica...
   --
+  -- tp_evento:
+  -- -  I: INSERTED
+  -- -  U: UPDATED
+  -- -  D: DELETED
+  --
   if object_id(@tabela_replica) is null begin
-    -- HISTORICO:
-    --    0. Registro atual.
-    --    1. Registro defasado. Existe uma versão mais nova.
-    --   -1. Registro apagado na origem.
     set @sql = concat(
       'create table ',@tabela_replica,' (
          id_evento bigint not null primary key
            foreign key references replica.evento (id_evento)
            on delete cascade,
-         cod_empresa int not null,
-         historico int not null default (0)
+         tp_evento char not null,
+         cod_empresa int not null
        )')
     exec sp_executesql @sql
   end
@@ -156,10 +160,13 @@ begin
 
   exec sp_executesql @sql
 
-  --
-  -- Garantindo a existência de uma view no DBdirector para acesso à esta tabela replicada
-  --
-  exec replica.mapear_view_director @cod_empresa, @tabela_mercadologic
+  set @sql = concat('drop view if exists ',@view_replica)
+  exec sp_executesql @sql
+
+  set @sql = concat('
+    create view ',@view_replica,'
+    as select * from ',@tabela_replica,' where tp_evento != ''D''')
+  exec sp_executesql @sql
 
   raiserror(N'TABELA DE RÉPLICA ATUALIZADA: %s',10,1,@tabela_replica) with nowait
 end

@@ -6,7 +6,6 @@ go
 create view replica.vw_evento as 
 select evento.id_evento
      , evento.cod_empresa
-     , evento.replicado
      , evento.id_remoto
      , esquema.texto as esquema
      , tabela.texto as tabela
@@ -19,6 +18,9 @@ select evento.id_evento
        end as acao
      , evento.data
      , evento.versao
+     , evento.status
+     , evento.falha
+     , evento.falha_detalhada
      , origem.texto as origem
   from replica.evento
  inner join replica.texto as esquema on esquema.id = evento.id_esquema

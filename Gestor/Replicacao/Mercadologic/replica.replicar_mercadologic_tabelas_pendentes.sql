@@ -39,12 +39,11 @@ begin
   declare @id_evento int
   declare @tabela varchar(100)
   declare @chave_tabela int
-  declare @sucesso int
   
   select @id_evento = min(id_evento)
     from replica.evento with (nolock)
    where cod_empresa = @cod_empresa
-     and replicado = 0
+     and status = 0
 
   while @id_evento is not null begin
   
@@ -55,7 +54,7 @@ begin
      inner join replica.texto tabela on tabela.id = evento.id_tabela
      where evento.id_evento = @id_evento
 
-    exec @sucesso=replica.replicar_mercadologic_tabela
+    exec replica.replicar_mercadologic_tabela
          @id_evento
        , @provider
        , @driver
@@ -65,14 +64,10 @@ begin
        , @usuario
        , @senha
 
-    update replica.evento
-       set replicado = case @sucesso when 0 then 1 else 0 end
-     where id_evento = @id_evento
-  
     select @id_evento = min(id_evento)
       from replica.evento with (nolock)
      where cod_empresa = @cod_empresa
-       and replicado = 0
+       and status = 0
        and id_evento > @id_evento
   end
 

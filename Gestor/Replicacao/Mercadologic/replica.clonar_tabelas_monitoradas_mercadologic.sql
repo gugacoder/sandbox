@@ -75,5 +75,4 @@ begin
   end
 end
 go
--- exec replica.clonar_tabelas_monitoradas_mercadologic 1
 
