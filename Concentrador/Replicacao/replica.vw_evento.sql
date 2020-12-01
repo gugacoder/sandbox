@@ -5,7 +5,8 @@ create or replace view replica.vw_evento as
 select evento.id
      , esquema.texto as esquema
      , tabela.texto as tabela
-     , evento.chave
+     , origem.texto as origem
+     , evento.cod_registro
      , case evento.acao
          when 'I' then 'INSERT'
          when 'U' then 'UPDATE'
@@ -13,8 +14,6 @@ select evento.id
          when 'T' then 'TRUNCATE'
        end as acao
      , evento.data
-     , evento.versao
-     , origem.texto as origem
   from replica.evento
  inner join replica.texto as esquema on esquema.id = evento.id_esquema
  inner join replica.texto as tabela  on tabela .id = evento.id_tabela

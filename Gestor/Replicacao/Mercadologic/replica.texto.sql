@@ -8,6 +8,6 @@ if object_id('replica.texto') is null
   )
 go
 
-if not exists(select 1 from sys.indexes where name = 'IX_replica_texto_texto')
+if not exists(select 1 from sys.indexes where name = 'IX__replica_texto__texto')
   create unique index IX_replica_texto_texto on replica.texto (texto)
 go

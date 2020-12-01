@@ -5,6 +5,7 @@ drop procedure if exists replica.replicar_mercadologic
 go
 create procedure replica.replicar_mercadologic (
     @cod_empresa int
+  , @maximo_de_registros int = null
   -- Parâmetros opcionais de conectividade.
   -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
   , @provider nvarchar(50) = null
@@ -37,34 +38,36 @@ begin
   end
 
   exec replica.clonar_tabelas_monitoradas_mercadologic
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
+       @cod_empresa=@cod_empresa
+     , @provider=@provider
+     , @driver=@driver
+     , @servidor=@servidor
+     , @porta=@porta
+     , @database=@database
+     , @usuario=@usuario
+     , @senha=@senha
 
   exec replica.replicar_mercadologic_eventos
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
+       @cod_empresa=@cod_empresa
+     , @maximo_de_registros=@maximo_de_registros
+     , @provider=@provider
+     , @driver=@driver
+     , @servidor=@servidor
+     , @porta=@porta
+     , @database=@database
+     , @usuario=@usuario
+     , @senha=@senha
 
   exec replica.replicar_mercadologic_tabelas_pendentes
-       @cod_empresa
-     , @provider
-     , @driver
-     , @servidor
-     , @porta
-     , @database
-     , @usuario
-     , @senha
+       @cod_empresa=@cod_empresa
+     , @maximo_de_registros=@maximo_de_registros
+     , @provider=@provider
+     , @driver=@driver
+     , @servidor=@servidor
+     , @porta=@porta
+     , @database=@database
+     , @usuario=@usuario
+     , @senha=@senha
 
   raiserror(N'REPLICAÇÃO DO CONCENTRADOR NO GESTOR CONCLUÍDA.',10,1) with nowait
 end

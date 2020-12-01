@@ -41,6 +41,7 @@ begin
   declare @tabela varchar(100)
   declare @tabela_replica varchar(100)
   declare @view_replica varchar(100)
+  declare @view_replica_director varchar(100)
   declare @sql nvarchar(max)
   declare @tb_campo table (
     nome varchar(100),
@@ -62,9 +63,11 @@ begin
   if @esquema = 'public' begin
     set @tabela_replica = concat('replica.',@tabela)
     set @view_replica = concat('replica.vw_',@tabela)
+    set @view_replica_director = concat('mlogic.vw_replica_',@tabela)
   end else begin
     set @tabela_replica = concat('replica.',@esquema,'_',@tabela)
     set @view_replica = concat('replica.vw_',@esquema,'_',@tabela)
+    set @view_replica_director = concat('mlogic.vw_replica_',@esquema,'_',@tabela)
   end
 
   set @sql = '
@@ -127,18 +130,11 @@ begin
   --
   -- Construindo a tabela de replica...
   --
-  -- tp_evento:
-  -- -  I: INSERTED
-  -- -  U: UPDATED
-  -- -  D: DELETED
-  --
   if object_id(@tabela_replica) is null begin
     set @sql = concat(
       'create table ',@tabela_replica,' (
-         id_evento bigint not null primary key
-           foreign key references replica.evento (id_evento)
-           on delete cascade,
-         tp_evento char not null,
+         id_replicacao bigint not null identity(1,1) primary key,
+         excluido bit not null default (0),
          cod_empresa int not null
        )')
     exec sp_executesql @sql
@@ -159,15 +155,42 @@ begin
    order by posicao
 
   exec sp_executesql @sql
+  raiserror(N'TABELA DE RÉPLICA CLONADA: %s',10,1,@tabela_replica) with nowait
 
-  set @sql = concat('drop view if exists ',@view_replica)
-  exec sp_executesql @sql
-
+  --
+  -- CADASTRANDO UMA VIEW PARA EXIBIR APENAS OS CAMPOS NAO-EXCLUIDOS
+  --
   set @sql = concat('
-    create view ',@view_replica,'
-    as select * from ',@tabela_replica,' where tp_evento != ''D''')
+    if object_id(''',@view_replica,''') is null exec (''
+      create view ',@view_replica,'
+      as select * from ',@tabela_replica,' where excluido = 0
+    '')')
   exec sp_executesql @sql
+  raiserror(N'VIEW DE RÉPLICA CRIADA: %s',10,1,@view_replica) with nowait
 
-  raiserror(N'TABELA DE RÉPLICA ATUALIZADA: %s',10,1,@tabela_replica) with nowait
+  --
+  -- CADASTRANDO UMA VIEW NA BASE DO DIRECTOR
+  --
+  set @sql = concat('
+    use {ScriptPack.Director};
+    if object_id(''',@view_replica_director,''') is null exec (''
+      create view ',@view_replica_director,'
+      as select * from {ScriptPack.Mercadologic}.',@tabela_replica,' where excluido = 0
+    '')')
+  exec sp_executesql @sql
+  raiserror(N'VIEW DE RÉPLICA CRIADA NO DBDIRECTOR: %s',10,1,@view_replica_director) with nowait
+
+  --
+  -- CADASTRANDO UMA VIEW HISTORICA NA BASE DO DIRECTOR
+  --
+  set @sql = concat('
+    use {ScriptPack.Director};
+    if object_id(''',@view_replica_director,'_historico'') is null exec (''
+      create view ',@view_replica_director,'_historico
+      as select * from {ScriptPack.Mercadologic}.',@tabela_replica,'
+    '')')
+  exec sp_executesql @sql
+  raiserror(N'VIEW DE RÉPLICA HISTÓRICA CRIADA NO DBDIRECTOR: %s_historico',10,1,@view_replica_director) with nowait
+
 end
 go

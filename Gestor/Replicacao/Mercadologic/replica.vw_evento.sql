@@ -5,11 +5,12 @@ drop view if exists replica.vw_evento
 go
 create view replica.vw_evento as 
 select evento.id_evento
-     , evento.cod_empresa
      , evento.id_remoto
      , esquema.texto as esquema
      , tabela.texto as tabela
-     , evento.chave
+     , origem.texto as origem
+     , evento.cod_empresa
+     , evento.cod_registro
      , case evento.acao
          when 'I' then 'INSERT'
          when 'U' then 'UPDATE'
@@ -17,11 +18,9 @@ select evento.id_evento
          when 'T' then 'TRUNCATE'
        end as acao
      , evento.data
-     , evento.versao
      , evento.status
      , evento.falha
      , evento.falha_detalhada
-     , origem.texto as origem
   from replica.evento
  inner join replica.texto as esquema on esquema.id = evento.id_esquema
  inner join replica.texto as tabela  on tabela .id = evento.id_tabela

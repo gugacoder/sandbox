@@ -4,7 +4,9 @@
 drop procedure if exists replica.replicar_mercadologic_tabela
 go
 create procedure replica.replicar_mercadologic_tabela (
-    @id_evento bigint
+    @cod_empresa int
+  , @tabela_mercadologic varchar(100)
+  , @chaves replica.tp_id readonly
   -- Parâmetros opcionais de conectividade.
   -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
   , @provider nvarchar(50) = null
@@ -16,17 +18,8 @@ create procedure replica.replicar_mercadologic_tabela (
   , @senha nvarchar(50) = null
 ) as
 begin
-  declare @cod_empresa int
-  declare @esquema varchar(100)
-  declare @tabela varchar(100)
-  declare @valor_chave int = null
-
-  select @cod_empresa = cod_empresa
-       , @esquema = esquema
-       , @tabela = tabela
-       , @valor_chave = chave
-    from replica.vw_evento with (nolock)
-   where id_evento = @id_evento
+  if not exists (select 1 from @chaves)
+    return
 
   if @provider is null
   or @driver   is null
@@ -48,40 +41,61 @@ begin
      where DFcod_empresa = @cod_empresa
   end
 
-  declare @tp_evento char
-  declare @esquema_replica varchar(100)
-  declare @tabela_replica varchar(100)
-  declare @campo_chave varchar(100)
-  declare @castings varchar(max) = ''
-  declare @selecting varchar(max) = ''
-  declare @campos varchar(max) = ''
-  declare @campos_remotos varchar(max) = ''
-  declare @set_campos varchar(max) = ''
-  declare @campo_anterior varchar(100)
-  declare @sql nvarchar(max)
-  declare @status int
+  -- variaveis de controle
+  declare @status int = -1
   declare @message nvarchar(max)
   declare @severity int
   declare @state int
 
-  select @tp_evento = acao
-    from replica.evento
-   where id_evento = @id_evento
+  --
+  -- AJUSTANDO OS NOMES DAS TABELAS DO MERCADOLOGIC E DE REPLICA
+  --
+  declare @esquema varchar(100)         -- contem o esquema da tabela no mercadologic
+  declare @tabela varchar(100)          -- contem o nome da tabela no mercadologic, sem esquema
+  declare @esquema_replica varchar(100) -- contem o esquema da tabela de replica
+  declare @tabela_replica varchar(100)  -- contem o nome da tabela de replica
 
-  set @esquema_replica = 'replica'
+  if @tabela_mercadologic like '%.%' begin
+    set @esquema = replica.SPLIT_PART(@tabela_mercadologic, '.', 1)
+    set @tabela = replica.SPLIT_PART(@tabela_mercadologic, '.', 2)
+  end else begin
+    set @esquema = 'public'
+    set @tabela = @tabela_mercadologic
+    set @tabela_mercadologic = concat(@esquema,'.',@tabela)
+  end
+
   if @esquema = 'public' begin
+    set @esquema_replica = 'replica'
     set @tabela_replica = @tabela
   end else begin
+    set @esquema_replica = 'replica'
     set @tabela_replica = concat(@esquema,'_',@tabela)
   end
 
+  raiserror(N'REPLICANDO: %s.%s',10,1,@esquema_replica,@tabela_replica) with nowait
+
   --
-  -- O campo `cod_empresa` é usado para determinar o fim do cabeçalho da tabela e
-  -- início dos campos replicados.
-  -- O próximo campo depois de `cod_empresa` é considerado o campo chave da tabela
-  -- no mercadologic.
+  -- MONTANDO OS NOMES DE CAMPOS E CONVERSOES PARA A CONSULTA DINAMICA
   --
-  ; with colunas as (
+  declare @castings varchar(max) = ''
+  declare @selecting varchar(max) = ''
+  declare @campo_chave varchar(100)
+  declare @valores_chave varchar(max) = ''
+  declare @campos varchar(max) = ''
+  declare @campos_remotos varchar(max) = ''
+  declare @set_campos varchar(max) = ''
+
+  select @valores_chave = concat(@valores_chave,',',id) from @chaves
+  -- Removendo a vírgula no início dos campos
+  set @valores_chave = substring(@valores_chave,2,len(@valores_chave))
+
+  --
+  -- O campo `cod_empresa` não é importado mas sim inserido arbitrariamente.
+  -- Os campos antes de `cod_empresa` são considerados campos de cabeçalho da replicação
+  -- e por isso são saltados na montagem da SQL dinamica.
+  --
+  ; with
+  todas_as_colunas as (
     select sys.columns.column_id
          , sys.columns.name
          , type_name(sys.columns.user_type_id) as [type]
@@ -90,10 +104,15 @@ begin
              on sys.schemas.schema_id = sys.objects.schema_id
      inner join sys.columns
              on sys.columns.object_id = sys.objects.object_id
-     where sys.schemas.name = 'replica'
+     where sys.schemas.name = @esquema_replica
        and sys.objects.name = @tabela_replica
+  ),
+  colunas as (
+    select column_id, name, [type]
+      from todas_as_colunas
+     where column_id >= (select column_id from todas_as_colunas where name = 'cod_empresa')
   )
-  select @castings = case when column_id > (select column_id from colunas where name = 'cod_empresa') then
+  select @castings = case when name != 'cod_empresa' then
            concat(@castings,',',
              case [type] when 'xml'
                then concat('concat(',
@@ -122,7 +141,7 @@ begin
              end
            )
          end
-       , @selecting = case when column_id > (select column_id from colunas where name = 'cod_empresa') then
+       , @selecting = case when name != 'cod_empresa' then
            concat(@selecting,',',
              case
                when [type] = 'xml'
@@ -154,32 +173,30 @@ begin
              end
            )
          end
+       , @campo_chave = case when name != 'cod_empresa' then coalesce(@campo_chave, name) end
        , @campos = concat(@campos,',', name)
        , @campos_remotos = concat(@campos_remotos,',',name)
-       , @set_campos = concat(@set_campos,',',name,'=tabela_remota.',name)
+       , @set_campos = concat(@set_campos,',',name,'=tabela_origem.',name)
        -- Determinando o campo chave.
        -- O campo chave é o campo logo depois do `cod_empresa`.
-       , @campo_chave = case @campo_anterior
-           when 'cod_empresa' then name
-           else @campo_chave
-         end
-       , @campo_anterior = name
     from colunas
    order by column_id
 
+  -- Removendo a vírgula no início dos campos
   set @castings = substring(@castings,2,len(@castings))
   set @selecting = substring(@selecting,2,len(@selecting))
   set @campos = substring(@campos,2,len(@campos))
   set @campos_remotos = substring(@campos_remotos,2,len(@campos_remotos))
   set @set_campos = substring(@set_campos,2,len(@set_campos))
 
-  raiserror(N'REPLICANDO: %s.%s=%i',10,1,
-    @tabela_replica,@campo_chave,@valor_chave) with nowait
-  
+  --
+  -- REPLICANDO OS DADOS DA TABELA
+  --
+  declare @sql nvarchar(max)
+  declare @contador int
+
   set @sql = concat(
-   'select ',cast(@id_evento as varchar(100)),' as id_evento
-         , ''',@tp_evento,''' as tp_evento
-         , ',cast(@cod_empresa as varchar(100)),' as cod_empresa
+   'select ',@cod_empresa,' as cod_empresa
          , ',@castings,'
       into #tb_registro
       from openrowset(
@@ -188,48 +205,46 @@ begin
          , ''select * from (
                select ',@selecting,'
                  from ',@esquema,'.',@tabela,'
-                where ',@campo_chave,' = ',cast(@valor_chave as varchar(100)),'
+                where ',@campo_chave,' in (',@valores_chave,')
              ) as t;''
            ) as t
     ;
-    merge ',@esquema_replica,'.',@tabela_replica,' as tabela_local
-    using #tb_registro as tabela_remota
-       on tabela_local.cod_empresa = tabela_remota.cod_empresa
-      and tabela_local.',@campo_chave,' = tabela_remota.',@campo_chave,'
+    update ',@esquema_replica,'.',@tabela_replica,'
+       set excluido = 1
+     where cod_empresa = ',@cod_empresa,'
+       and ',@campo_chave,' in (',@valores_chave,')
+       and ',@campo_chave,' not in (select ',@campo_chave,' from #tb_registro)
+    ;
+    merge ',@esquema_replica,'.',@tabela_replica,' as tabela_replica
+    using #tb_registro as tabela_origem
+       on tabela_replica.cod_empresa = tabela_origem.cod_empresa
+      and tabela_replica.',@campo_chave,' = tabela_origem.',@campo_chave,'
      when matched then
           update set ',@set_campos,'
-     when not matched by target then
+     when not matched then
           insert (',@campos,')
           values (',@campos_remotos,');')
 
   begin try
 
     exec @status = sp_executesql @sql
+    set @contador = @@rowcount
     
-    update replica.evento
-       set status = case @status when 0 then 1 else -1 end
-         , falha = null
-         , falha_detalhada = null
-     where id_evento = @id_evento
-
-    if @status = 0 begin
-      raiserror(N'REGISTRO DO CONCENTRADOR REPLICADO NO GESTOR: %s.%s=%i',10,1,
-        @tabela_replica,@campo_chave,@valor_chave) with nowait
+    if @status != 0 begin
+      raiserror(N'FALHOU A TENTATIVA DE REPLICAR UM REGISTRO DO CONCENTRADOR NO GESTOR: %s.%s',16,1,
+        @esquema_replica,@tabela_replica) with nowait
+    end else if @contador = 1 begin
+      raiserror(N'1 REGISTRO DO CONCENTRADOR REPLICADO NO GESTOR: %s.%s',10,1,
+        @esquema_replica,@tabela_replica) with nowait
     end else begin
-      raiserror(N'FALHOU A TENTATIVA DE REPLICAR UM REGISTRO DO CONCENTRADOR NO GESTOR: %s.%s=%i',16,1,
-        @tabela_replica,@campo_chave,@valor_chave) with nowait
+      raiserror(N'%d REGISTROS DO CONCENTRADOR REPLICADOS NO GESTOR: %s.%s',10,1,
+        @contador,@esquema_replica,@tabela_replica) with nowait
     end
 
   end try
   begin catch
     set @status = -1
     
-    update replica.evento
-       set status = -1
-         , falha = error_message()
-         , falha_detalhada = null
-     where id_evento = @id_evento
-
     set @message = concat(error_message(),' (linha ',error_line(),')')
     set @severity = error_severity()
     set @state = error_state()

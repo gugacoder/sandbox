@@ -44,7 +44,7 @@ begin
   )
 
   set @sql = '
-    select *
+    select esquema, tabela
       from openrowset(
            '''+@provider+'''
          , ''Driver='+@driver+';Server='+@servidor+';Port=5432;Database='+@database+';Uid='+@usuario+';Pwd='+@senha+';''

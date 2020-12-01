@@ -14,4 +14,4 @@ module.title=Concentrador do Mercadologic
 module.description=Sistema de Gestão Centralizada do Mercadologic.
 
 # Pacotes selecionados por padrão quando o "migrant.exe" é lançado.
-packages.pre-selected=Replicacao
+packages.pre-selected=Replicacao,HistoricoDeVenda

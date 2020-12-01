@@ -6,14 +6,18 @@ returns void as $$
 declare
   esquema varchar;
 begin
+
   if tabela like '%.%' then
     esquema := split_part(tabela, '.', 0);
     tabela := split_part(tabela, '.', 1);
   else
     esquema := 'public';
   end if;
+
+  --
+  -- CRIANDO A TRIGGER DE REGISTRO DE EVENTOS
+  --
   execute '
-    drop trigger if exists tg_' || tabela || ' on ' || esquema || '.' || tabela || ';
     drop trigger if exists tg_replicar_' || tabela || ' on ' || esquema || '.' || tabela || ';
     create trigger tg_replicar_' || tabela || '
     after insert or update or delete
@@ -22,7 +26,7 @@ begin
     execute procedure replica.registrar_evento();'
       using tabela;
 
-  RAISE NOTICE 'TRIGGER `tg_%s` ANEXADA A TABELA `%.%` PARA MONITORAMENTO DE EVENTOS.',
+  RAISE NOTICE 'TRIGGER `tg_replicar_%s` ANEXADA A TABELA `%.%` PARA MONITORAMENTO DE EVENTOS.',
     tabela, esquema, tabela;
     
 end;
