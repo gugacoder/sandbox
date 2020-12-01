@@ -58,7 +58,18 @@ begin
      , @usuario=@usuario
      , @senha=@senha
 
-  exec replica.replicar_mercadologic_tabelas_pendentes
+  exec replica.replicar_mercadologic_registros_pendentes
+       @cod_empresa=@cod_empresa
+     , @maximo_de_registros=@maximo_de_registros
+     , @provider=@provider
+     , @driver=@driver
+     , @servidor=@servidor
+     , @porta=@porta
+     , @database=@database
+     , @usuario=@usuario
+     , @senha=@senha
+
+  exec replica.replicar_mercadologic_registros_falhados
        @cod_empresa=@cod_empresa
      , @maximo_de_registros=@maximo_de_registros
      , @provider=@provider

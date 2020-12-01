@@ -1,12 +1,12 @@
 --
--- PROCEDURE replica.replicar_mercadologic_tabela
+-- PROCEDURE replica.replicar_mercadologic_registros
 --
-drop procedure if exists replica.replicar_mercadologic_tabela
+drop procedure if exists replica.replicar_mercadologic_registros
 go
-create procedure replica.replicar_mercadologic_tabela (
+create procedure replica.replicar_mercadologic_registros (
     @cod_empresa int
   , @tabela_mercadologic varchar(100)
-  , @chaves replica.tp_id readonly
+  , @tb_registro replica.tp_id readonly
   -- Parâmetros opcionais de conectividade.
   -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
   , @provider nvarchar(50) = null
@@ -18,7 +18,7 @@ create procedure replica.replicar_mercadologic_tabela (
   , @senha nvarchar(50) = null
 ) as
 begin
-  if not exists (select 1 from @chaves)
+  if not exists (select 1 from @tb_registro)
     return
 
   if @provider is null
@@ -85,7 +85,7 @@ begin
   declare @campos_remotos varchar(max) = ''
   declare @set_campos varchar(max) = ''
 
-  select @valores_chave = concat(@valores_chave,',',id) from @chaves
+  select @valores_chave = concat(@valores_chave,',',id) from @tb_registro
   -- Removendo a vírgula no início dos campos
   set @valores_chave = substring(@valores_chave,2,len(@valores_chave))
 

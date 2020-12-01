@@ -1,9 +1,9 @@
 --
--- PROCEDURE replicar_mercadologic_tabelas_pendentes
+-- PROCEDURE replicar_mercadologic_registros_pendentes
 --
-drop procedure if exists replica.replicar_mercadologic_tabelas_pendentes
+drop procedure if exists replica.replicar_mercadologic_registros_pendentes
 go
-create procedure replica.replicar_mercadologic_tabelas_pendentes (
+create procedure replica.replicar_mercadologic_registros_pendentes (
     @cod_empresa int
   , @maximo_de_registros int = null
   -- Parâmetros opcionais de conectividade.
@@ -46,7 +46,7 @@ begin
   end
 
   -- Colecao de dados processados
-  declare @tb_chaves replica.tp_id
+  declare @tb_registro replica.tp_id
   declare @tb_evento table (
     id_evento int,
     tabela varchar(100),
@@ -92,8 +92,8 @@ begin
     set @tabela = (select min(tabela) from @tb_evento)
     while @tabela is not null begin
     
-      delete from @tb_chaves
-      insert into @tb_chaves (id)
+      delete from @tb_registro
+      insert into @tb_registro (id)
       select distinct cod_registro
         from @tb_evento
        where tabela = @tabela
@@ -101,10 +101,10 @@ begin
       begin try
         begin transaction tx
 
-        exec replica.replicar_mercadologic_tabela
+        exec replica.replicar_mercadologic_registros
              @cod_empresa=@cod_empresa
            , @tabela_mercadologic=@tabela
-           , @chaves=@tb_chaves
+           , @tb_registro=@tb_registro
            -- Parâmetros opcionais de conectividade.
            -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
            , @provider=@provider

@@ -16,7 +16,7 @@ if object_id('replica.evento') is null
       constraint FK__replica_evento__replica_texto__origem
       foreign key references replica.texto(id),
     cod_empresa int not null,
-    cod_registro int not null,
+    cod_registro bigint not null,
     acao char(1) not null,
     data datetime not null,
     --  1: Replicado com sucesso
@@ -45,4 +45,8 @@ go
 
 if not exists(select 1 from sys.indexes where name = 'IX__replica_evento__status')
   create index IX__replica_evento__status on replica.evento (status)
+go
+
+if not exists(select 1 from sys.indexes where name = 'IX__replica_evento__cod_registro')
+  create index IX__replica_evento__cod_registro on replica.evento (cod_registro)
 go

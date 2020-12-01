@@ -17,14 +17,6 @@ create procedure replica.replicar_mercadologic_registros_falhados (
   , @senha nvarchar(50) = null
 ) as
 begin
-  -- 
-  -- Se @maximo_de_registros é informado, a procedure processa esse número de registros e sai.
-  -- Se @maximo_de_registros é omitido, a procedure processa todos os registros disponíveis
-  -- nas tabelas, enquanto houverem registros pendentes.
-  -- 
-  declare @looping_unico bit = case when @maximo_de_registros is not null then 1 else 0 end
-  declare @maximo_ids_por_vez int = coalesce(@maximo_de_registros, 1000)
-
   if @provider is null
   or @driver   is null
   or @servidor is null
@@ -46,120 +38,75 @@ begin
   end
 
   declare @sql nvarchar(max)
-  declare @contagem int
-  declare @ultimo_id_evento int
-  declare @tb_evento table (
-      id int primary key
-    , esquema varchar(100)
-    , tabela varchar(100)
-    , origem varchar(100)
-    , cod_registro int
-    , acao varchar(100)
-    , data datetime
-  )
+  declare @id_evento int
+  declare @tb_registro replica.tp_id
+  declare @tabela varchar(100)
+  declare @cod_registro int
+  declare @contador int
   
-  while 1=1 begin
-    delete from @tb_evento
+  select @id_evento = min(id_evento) from replica.evento where evento.status = -1
+  while @id_evento is not null begin
 
-    select @ultimo_id_evento = coalesce(max(id_remoto), 0)
-      from replica.evento with (nolock)
-     where cod_empresa = @cod_empresa
+    select @tabela = concat(esquema.texto,'.',tabela.texto)
+         , @cod_registro = evento.cod_registro
+      from replica.evento
+     inner join replica.texto as esquema on esquema.id = evento.id_esquema
+     inner join replica.texto as tabela on tabela.id = evento.id_tabela
+     where evento.id_evento = @id_evento
 
-    set @sql = concat('
-      select *
-        from openrowset(
-             ''',@provider,'''
-           , ''Driver=',@driver,';Server=',@servidor,';Port=5432;Database=',@database,';Uid=',@usuario,';Pwd=',@senha,';''
-           , ''select evento.id
-                    , esquema.texto as esquema
-                    , tabela.texto as tabela
-                    , origem.texto as origem
-                    , evento.cod_registro
-                    , evento.acao
-                    , evento.data
-                 from replica.evento
-                inner join replica.texto as esquema on esquema.id = evento.id_esquema
-                inner join replica.texto as tabela  on tabela .id = evento.id_tabela
-                inner join replica.texto as origem  on origem .id = evento.id_origem
-                where evento.id > ',@ultimo_id_evento,'
-                order by evento.id
-                limit ',@maximo_ids_por_vez,';''
-             ) as t')
-    insert into @tb_evento
-      exec sp_executesql @sql
+    raiserror(N'CHECANDO FALHA OCORRIDA NA REPLICAÇÃO DO REGISTRO: %s (id: %d)',10,1,@tabela,@cod_registro) with nowait
 
-    if not exists (select 1 from @tb_evento)
-      break;
+    delete from @tb_registro
+    insert into @tb_registro (id) values (@cod_registro)
 
-    --
-    -- INSERINDO TABELA E ESQUEMA NA TABELA DE TEXTO
-    --
-    ; with texto_remoto as (
-      select esquema as texto from @tb_evento
-      union select tabela from @tb_evento
-      union select origem from @tb_evento
-    )
-    merge replica.texto
-    using texto_remoto on texto_remoto.texto = replica.texto.texto
-     when not matched by target then insert (texto) values (texto_remoto.texto);
-    
-    --
-    -- CADASTRANDO O EVENTO
-    --
-    ; with evento_remoto as (
-      select evento.id
-           , esquema.id as id_esquema
-           , tabela.id as id_tabela
-           , origem.id as id_origem
-           , @cod_empresa as cod_empresa
-           , evento.cod_registro
-           , evento.acao
-           , evento.data
-        from @tb_evento as evento
-       inner join replica.texto as esquema on esquema.texto = evento.esquema
-       inner join replica.texto as tabela  on tabela .texto = evento.tabela
-       inner join replica.texto as origem  on origem .texto = evento.origem
-    )
-    merge replica.evento
-    using evento_remoto
-       on evento_remoto.cod_empresa = replica.evento.cod_empresa
-      and evento_remoto.id = replica.evento.id_remoto
-     when not matched by target then
-          insert (
-              id_remoto
-            , id_esquema
-            , id_tabela
-            , id_origem
-            , cod_empresa
-            , cod_registro
-            , acao
-            , data
-            )
-          values (
-              evento_remoto.id
-            , evento_remoto.id_esquema
-            , evento_remoto.id_tabela
-            , evento_remoto.id_origem
-            , evento_remoto.cod_empresa
-            , evento_remoto.cod_registro
-            , evento_remoto.acao
-            , evento_remoto.data
-          );
+    begin try
+      begin transaction tx
 
-    set @contagem = @@rowcount
+      exec replica.replicar_mercadologic_registros
+           @cod_empresa=@cod_empresa
+         , @tabela_mercadologic=@tabela
+         , @tb_registro=@tb_registro
+         -- Parâmetros opcionais de conectividade.
+         -- Se omitidos os parâmetros são lidos da view replica.vw_empresa.
+         , @provider=@provider
+         , @driver=@driver
+         , @servidor=@servidor
+         , @porta=@porta
+         , @database=@database
+         , @usuario=@usuario
+         , @senha=@senha
 
-    if @contagem = 0 begin
-      break;
-    end else if @contagem = 1 begin
-      raiserror(N'1 EVENTO DO CONCENTRADOR REGISTRADO NO GESTOR.',10,1) with nowait
-    end else begin
-      raiserror(N'%d EVENTOS DO CONCENTRADOR REGISTRADOS NO GESTOR.',10,1,@contagem) with nowait
+      update replica.evento
+         set status = 1
+           , falha = null
+           , falha_detalhada = null
+       where id_evento = @id_evento
+
+      commit transaction tx
+    end try
+    begin catch
+      if @@trancount > 0
+        rollback transaction tx
+
+      -- Marcando o registro com -2, significando registro falhado duas vezes.
+      update replica.evento
+         set status = -2
+           , falha = concat(error_message(),' (linha ',error_line(),')')
+           , falha_detalhada = null
+       where id_evento = @id_evento
+
+    end catch
+
+    if @maximo_de_registros is not null begin
+      set @contador = coalesce(@contador,0) + 1
+      if @contador >= @maximo_de_registros begin
+        return 0
+      end
     end
 
-    if @looping_unico = 1
-      break
-
     waitfor delay '00:00:01';
+    select @id_evento = min(id_evento) from replica.evento
+     where evento.status = -1 and id_evento > @id_evento
   end
 end
 go
