@@ -60,16 +60,18 @@ begin
     set @tabela = @tabela_mercadologic
   end
 
-  if @esquema = 'public' begin
-    set @tabela_replica = concat('replica.',@tabela)
-    set @view_replica = concat('replica.vw_',@tabela)
-    set @view_replica_director = concat('mlogic.vw_replica_',@tabela)
-  end else begin
-    set @tabela_replica = concat('replica.',@esquema,'_',@tabela)
-    set @view_replica = concat('replica.vw_',@esquema,'_',@tabela)
-    set @view_replica_director = concat('mlogic.vw_replica_',@esquema,'_',@tabela)
-  end
+  --
+  -- CONSTRUINDO A TABELA DE REPLICA SE NECESSARIO
+  --
+  exec replica.criar_cabecalho_tabela_mercadologic
+    @tabela_mercadologic,
+    @tabela_replica output,
+    @view_replica output,
+    @view_replica_director output
 
+  --
+  -- OBTENDO OS CAMPOS DA TABELA NO MERCADOLOGIC
+  --
   set @sql = '
     select *
       from openrowset(
@@ -128,22 +130,13 @@ begin
            on tipo.tipo_postgres = campo.tipo_pgsql
 
   --
-  -- Construindo a tabela de replica...
+  -- ACRESCENTANDO OS CAMPOS DA TABELA DE REPLICA
+  -- Com base nos campos obtidos da tabela no Mercadologic.
   --
-  if object_id(@tabela_replica) is null begin
-    set @sql = concat(
-      'create table ',@tabela_replica,' (
-         id_replicacao bigint not null identity(1,1) primary key,
-         excluido bit not null default (0),
-         cod_empresa int not null
-       )')
-    exec sp_executesql @sql
-  end
-
   set @sql = ''
   select @sql = @sql + concat(
         'alter table ', @tabela_replica
-      , ' add ', nome, ' ', tipo_mssql, ' ', (case aceita_nulo when 1 then '' else 'not null ' end)
+      , ' add ', nome, ' ', tipo_mssql, ' null '
       , ';')
     from @tb_campo as campo
    where nome != 'cod_empresa'
@@ -158,39 +151,12 @@ begin
   raiserror(N'TABELA DE RÉPLICA CLONADA: %s',10,1,@tabela_replica) with nowait
 
   --
-  -- CADASTRANDO UMA VIEW PARA EXIBIR APENAS OS CAMPOS NAO-EXCLUIDOS
+  -- ATUALIZANDO A ESTRUTURA DAS VIEWS
   --
-  set @sql = concat('
-    if object_id(''',@view_replica,''') is null exec (''
-      create view ',@view_replica,'
-      as select * from ',@tabela_replica,' where excluido = 0
-    '')')
-  exec sp_executesql @sql
-  raiserror(N'VIEW DE RÉPLICA CRIADA: %s',10,1,@view_replica) with nowait
+  exec sp_refreshview @view_replica
 
-  --
-  -- CADASTRANDO UMA VIEW NA BASE DO DIRECTOR
-  --
-  set @sql = concat('
-    use {ScriptPack.Director};
-    if object_id(''',@view_replica_director,''') is null exec (''
-      create view ',@view_replica_director,'
-      as select * from {ScriptPack.Mercadologic}.',@tabela_replica,' where excluido = 0
-    '')')
-  exec sp_executesql @sql
-  raiserror(N'VIEW DE RÉPLICA CRIADA NO DBDIRECTOR: %s',10,1,@view_replica_director) with nowait
-
-  --
-  -- CADASTRANDO UMA VIEW HISTORICA NA BASE DO DIRECTOR
-  --
-  set @sql = concat('
-    use {ScriptPack.Director};
-    if object_id(''',@view_replica_director,'_historico'') is null exec (''
-      create view ',@view_replica_director,'_historico
-      as select * from {ScriptPack.Mercadologic}.',@tabela_replica,'
-    '')')
-  exec sp_executesql @sql
-  raiserror(N'VIEW DE RÉPLICA HISTÓRICA CRIADA NO DBDIRECTOR: %s_historico',10,1,@view_replica_director) with nowait
+  set @sql = concat('use {ScriptPack.Director}; exec sp_refreshview ''',@view_replica_director,'''')
+  exec (@sql)
 
 end
 go

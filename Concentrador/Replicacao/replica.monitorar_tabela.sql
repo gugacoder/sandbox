@@ -8,8 +8,8 @@ declare
 begin
 
   if tabela like '%.%' then
-    esquema := split_part(tabela, '.', 0);
-    tabela := split_part(tabela, '.', 1);
+    esquema := split_part(tabela, '.', 1);
+    tabela := split_part(tabela, '.', 2);
   else
     esquema := 'public';
   end if;

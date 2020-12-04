@@ -18,16 +18,27 @@ begin
   if tg_op = 'DELETE' then
 
     insert into public.historico_venda_item (
-        cod_pdv
-      , id_cupom
-      , id_item_cupom
+        id_pdv
       , id_sessao
       , aplicativo
+
+      , id_cupom
+      , id_item_cupom
+      , id_item
+      , id_unidade
+      
       , tp_operacao
       , cod_operacao
       , seq_operacao
-      , item_cancelado
+
+      , data_cupom
+      , frete_cupom
+      , desconto_cupom
+      , acrescimo_cupom
+
       , cupom_cancelado
+      , item_cancelado
+
       , preco_unitario
       , custo_unitario
       , desconto_unitario
@@ -39,45 +50,70 @@ begin
     )
     select
         cast(pdv.identificador as int)
-      , item.idcupomfiscal
-      , item.id
-      , item.idsessao
+      , itemcupomfiscal.idsessao
       , aplicativo
+
+      , itemcupomfiscal.idcupomfiscal
+      , itemcupomfiscal.id
+      , itemcupomfiscal.iditem
+      , item.unidade
+
       , 'D' -- tp_operacao
       , cod_operacao
       ,  0  -- seq_operacao
-      , item.cancelado
+
+      , cupomfiscal.datafechamento
+      , cupomfiscal.frete
+      , cupomfiscal.desconto
+      , cupomfiscal.acrescimo
+
       , cupomfiscal.cancelado
-      , item.preco
-      , item.precocusto
-      , item.desconto
-      , item.acrescimo
-      , item.quantidade
-      , item.totalbruto
-      , item.totaldesconto
-      , item.totalliquido
+      , itemcupomfiscal.cancelado
+
+      , itemcupomfiscal.preco
+      , itemcupomfiscal.precocusto
+      , itemcupomfiscal.desconto
+      , itemcupomfiscal.acrescimo
+      , itemcupomfiscal.quantidade
+      , itemcupomfiscal.totalbruto
+      , itemcupomfiscal.totaldesconto
+      , itemcupomfiscal.totalliquido
     --from (select old.*) as item
-    from old_table as item
+    from old_table as itemcupomfiscal
+    inner join item
+            on item.id = itemcupomfiscal.iditem
     inner join cupomfiscal
-            on cupomfiscal.id = item.idcupomfiscal
+            on cupomfiscal.id = itemcupomfiscal.idcupomfiscal
     inner join sessao
             on sessao.id = cupomfiscal.idsessao
     inner join pdv
-            on pdv.id = sessao.idpdv;
+            on pdv.id = sessao.idpdv
+    where cupomfiscal.fechado;
 
   elsif tg_op = 'INSERT' then
 
     insert into public.historico_venda_item (
-        cod_pdv
-      , id_cupom
-      , id_item_cupom
+        id_pdv
       , id_sessao
       , aplicativo
+
+      , id_cupom
+      , id_item_cupom
+      , id_item
+      , id_unidade
+      
       , tp_operacao
       , cod_operacao
       , seq_operacao
-      , item_cancelado
+
+      , data_cupom
+      , frete_cupom
+      , desconto_cupom
+      , acrescimo_cupom
+
       , cupom_cancelado
+      , item_cancelado
+
       , preco_unitario
       , custo_unitario
       , desconto_unitario
@@ -89,30 +125,44 @@ begin
     )
     select
         cast(pdv.identificador as int)
-      , item.idcupomfiscal
-      , item.id
-      , item.idsessao
+      , itemcupomfiscal.idsessao
       , aplicativo
+
+      , itemcupomfiscal.idcupomfiscal
+      , itemcupomfiscal.id
+      , itemcupomfiscal.iditem
+      , item.unidade
+
       , 'I' -- tp_operacao
       , cod_operacao
       ,  0  -- seq_operacao
-      , item.cancelado
+
+      , cupomfiscal.datafechamento
+      , cupomfiscal.frete
+      , cupomfiscal.desconto
+      , cupomfiscal.acrescimo
+     
       , cupomfiscal.cancelado
-      , item.preco
-      , item.precocusto
-      , item.desconto
-      , item.acrescimo
-      , item.quantidade
-      , item.totalbruto
-      , item.totaldesconto
-      , item.totalliquido
-    from new_table as item
+      , itemcupomfiscal.cancelado
+      
+      , itemcupomfiscal.preco
+      , itemcupomfiscal.precocusto
+      , itemcupomfiscal.desconto
+      , itemcupomfiscal.acrescimo
+      , itemcupomfiscal.quantidade
+      , itemcupomfiscal.totalbruto
+      , itemcupomfiscal.totaldesconto
+      , itemcupomfiscal.totalliquido
+    from new_table as itemcupomfiscal
+    inner join item
+            on item.id = itemcupomfiscal.iditem
     inner join cupomfiscal
-            on cupomfiscal.id = item.idcupomfiscal
+            on cupomfiscal.id = itemcupomfiscal.idcupomfiscal
     inner join sessao
             on sessao.id = cupomfiscal.idsessao
     inner join pdv
-            on pdv.id = sessao.idpdv;
+            on pdv.id = sessao.idpdv
+    where cupomfiscal.fechado;
   
   elsif tg_op = 'UPDATE' then
 
@@ -120,6 +170,9 @@ begin
       -- Detectando alteracoes nos campos monitorados
       select id from (
         select id
+             , idsessao
+             , idcupomfiscal
+             , iditem
              , cancelado
              , preco
              , precocusto
@@ -132,6 +185,9 @@ begin
           from old_table
          union
         select id
+             , idsessao
+             , idcupomfiscal
+             , iditem
              , cancelado
              , preco
              , precocusto
@@ -147,16 +203,27 @@ begin
       having count(id) = 2
     )
     insert into public.historico_venda_item (
-        cod_pdv
-      , id_cupom
-      , id_item_cupom
+        id_pdv
       , id_sessao
       , aplicativo
+
+      , id_cupom
+      , id_item_cupom
+      , id_item
+      , id_unidade
+      
       , tp_operacao
       , cod_operacao
       , seq_operacao
-      , item_cancelado
+
+      , data_cupom
+      , frete_cupom
+      , desconto_cupom
+      , acrescimo_cupom
+
       , cupom_cancelado
+      , item_cancelado
+
       , preco_unitario
       , custo_unitario
       , desconto_unitario
@@ -168,37 +235,51 @@ begin
     )
     select
         cast(pdv.identificador as int)
-      , item.idcupomfiscal
-      , item.id
-      , item.idsessao
+      , itemcupomfiscal.idsessao
       , aplicativo
-      , item.tp_operacao
+
+      , itemcupomfiscal.idcupomfiscal
+      , itemcupomfiscal.id
+      , itemcupomfiscal.iditem
+      , item.unidade
+      
+      , itemcupomfiscal.tp_operacao
       , cod_operacao
-      , item.seq_operacao
-      , item.cancelado
+      , itemcupomfiscal.seq_operacao
+
+      , cupomfiscal.datafechamento
+      , cupomfiscal.frete
+      , cupomfiscal.desconto
+      , cupomfiscal.acrescimo
+
       , cupomfiscal.cancelado
-      , item.preco
-      , item.precocusto
-      , item.desconto
-      , item.acrescimo
-      , item.quantidade
-      , item.totalbruto
-      , item.totaldesconto
-      , item.totalliquido
+      , itemcupomfiscal.cancelado
+
+      , itemcupomfiscal.preco
+      , itemcupomfiscal.precocusto
+      , itemcupomfiscal.desconto
+      , itemcupomfiscal.acrescimo
+      , itemcupomfiscal.quantidade
+      , itemcupomfiscal.totalbruto
+      , itemcupomfiscal.totaldesconto
+      , itemcupomfiscal.totalliquido
     from (
       select 'D' as tp_operacao, 0 as seq_operacao, * from old_table
       union
       select 'I' as tp_operacao, 1 as seq_operacao, * from new_table
-    ) as item
+    ) as itemcupomfiscal
     inner join ids
-            on ids.id = item.id
+            on ids.id = itemcupomfiscal.id
+    inner join item
+            on item.id = itemcupomfiscal.iditem
     inner join cupomfiscal
-            on cupomfiscal.id = item.idcupomfiscal
+            on cupomfiscal.id = itemcupomfiscal.idcupomfiscal
     inner join sessao
             on sessao.id = cupomfiscal.idsessao
     inner join pdv
             on pdv.id = sessao.idpdv
-    order by item.id, item.tp_operacao;
+    where cupomfiscal.fechado
+    order by itemcupomfiscal.id, itemcupomfiscal.tp_operacao;
   
   end if;
 

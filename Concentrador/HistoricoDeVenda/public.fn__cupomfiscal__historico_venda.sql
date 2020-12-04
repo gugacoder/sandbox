@@ -28,27 +28,50 @@ begin
     -- Detectando alteracoes nos campos monitorados
     select id from (
       select id
+           , idsessao
+           , fechado
            , cancelado
+           , datafechamento
+           , frete
+           , desconto
+           , acrescimo
         from old_table
        union
       select id
+           , idsessao
+           , fechado
            , cancelado
+           , datafechamento
+           , frete
+           , desconto
+           , acrescimo
         from new_table
     ) as t
     group by id
     having count(id) = 2
   )
   insert into public.historico_venda_item (
-      cod_pdv
-    , id_cupom
-    , id_item_cupom
+      id_pdv
     , id_sessao
     , aplicativo
+
+    , id_cupom
+    , id_item_cupom
+    , id_item
+    , id_unidade
+    
     , tp_operacao
     , cod_operacao
     , seq_operacao
-    , item_cancelado
+
+    , data_cupom
+    , frete_cupom
+    , desconto_cupom
+    , acrescimo_cupom
+
     , cupom_cancelado
+    , item_cancelado
+
     , preco_unitario
     , custo_unitario
     , desconto_unitario
@@ -60,15 +83,26 @@ begin
   )
   select
       cast(pdv.identificador as int)
-    , cupomfiscal.id
-    , itemcupomfiscal.id
     , cupomfiscal.idsessao
     , aplicativo
+
+    , cupomfiscal.id
+    , itemcupomfiscal.id
+    , itemcupomfiscal.iditem
+    , item.unidade
+    
     , cupomfiscal.tp_operacao
     , cod_operacao
     , cupomfiscal.seq_operacao
-    , itemcupomfiscal.cancelado
+
+    , cupomfiscal.datafechamento
+    , cupomfiscal.frete
+    , cupomfiscal.desconto
+    , cupomfiscal.acrescimo
+
     , cupomfiscal.cancelado
+    , itemcupomfiscal.cancelado
+
     , itemcupomfiscal.preco
     , itemcupomfiscal.precocusto
     , itemcupomfiscal.desconto
@@ -78,14 +112,16 @@ begin
     , itemcupomfiscal.totaldesconto
     , itemcupomfiscal.totalliquido
   from (
-    select 'D' as tp_operacao, 0 as seq_operacao, * from old_table
+    select 'D' as tp_operacao, 0 as seq_operacao, * from old_table where fechado
     union
-    select 'I' as tp_operacao, 1 as seq_operacao, * from new_table
+    select 'I' as tp_operacao, 1 as seq_operacao, * from new_table where fechado
   ) as cupomfiscal
   inner join ids
           on ids.id = cupomfiscal.id
   inner join itemcupomfiscal
           on itemcupomfiscal.idcupomfiscal = cupomfiscal.id
+  inner join item
+          on item.id = itemcupomfiscal.iditem
   inner join sessao
           on sessao.id = cupomfiscal.idsessao
   inner join pdv
