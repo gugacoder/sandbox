@@ -45,8 +45,8 @@ if object_id('replica.historico_venda_item') is null begin
     , desconto_unitario decimal(18,4) null
     , acrescimo_unitario decimal(18,4) null
     , quantidade decimal(18,4) null
+    , desconto_total decimal(18,4) null
     , total_sem_desconto decimal(18,4) null
-    , total_desconto decimal(18,4) null
     , total_com_desconto decimal(18,4) null
   )
 end
