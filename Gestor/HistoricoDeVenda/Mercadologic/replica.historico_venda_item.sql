@@ -43,22 +43,22 @@ if object_id('replica.historico_venda_item') is null begin
     , cupom_cancelado bit not null
     , item_cancelado bit not null
 
-    , frete_cupom decimal(18,4) not null
-    , desconto_cupom decimal(18,4) not null
-    , acrescimo_cupom decimal(18,4) not null
+    , frete_cupom decimal(18,2) not null
+    , desconto_cupom decimal(18,2) not null
+    , acrescimo_cupom decimal(18,2) not null
 
-    , preco_unitario decimal(18,4) not null
-    , custo_unitario decimal(18,4) not null
-    , desconto_unitario decimal(18,4) not null
-    , acrescimo_unitario decimal(18,4) not null
+    , preco_unitario decimal(18,2) not null
+    , custo_unitario decimal(18,2) not null
+    , desconto_unitario decimal(18,2) not null
+    , acrescimo_unitario decimal(18,2) not null
 
-    , quantidade decimal(18,4) not null
-    , total_bruto decimal(18,4) not null
-    , total_liquido decimal(18,4) not null
+    , quantidade decimal(18,2) not null
+    , total_bruto decimal(18,2) not null
+    , total_liquido decimal(18,2) not null
 
-    , valor_desconto decimal(18,4) not null
-    , valor_acrescimo decimal(18,4) not null
-    , valor_icms decimal(18,4) not null
+    , valor_desconto decimal(18,2) not null
+    , valor_acrescimo decimal(18,2) not null
+    , valor_icms decimal(18,2) not null
   )
 end
 
