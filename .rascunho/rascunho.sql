@@ -1,19 +1,15 @@
-/*
-select idcupomfiscal, * from itemcupomfiscal
-order by 1 desc
-limit 3
--- id_cupom: 518358
--- id_item_cupom: 2706348
-*/
+select id_item
+     , indice_item_cupom
+     , quantidade
+     , total_bruto
+     , total_liquido
+     , valor_icms
+ from replica.historico_venda_item
+where id_cupom = 518433
+  and id_item = 548
 
-update cupomfiscal set frete = frete + 1
-where id = 518358
+exec replica.replicar_mercadologic 7
 
-select * from itemcupomfiscal
+select * from replica.vw_empresa 7
 
-begin transaction;
-delete from historico_venda_item;
-update itemcupomfiscal set desconto = desconto + 1 where id = 2706348;
-delete from itemcupomfiscal where id = 2706348;
-select * from historico_venda_item;
-rollback;
+
