@@ -64,6 +64,8 @@ if not exists (
     , valor_icms numeric(18,4) not null
   );
 
+  select replica.monitorar_tabela('public.historico_venda_item')
+
 end if;
 end; $$;
 
