@@ -31,20 +31,20 @@ create table if not exists public.historico_venda_item (
   , cupom_cancelado boolean not null
   , item_cancelado boolean not null
 
-  , frete_cupom numeric(18,4) not null
-  , desconto_cupom numeric(18,4) not null
-  , acrescimo_cupom numeric(18,4) not null
+  , frete_cupom numeric(18,2) not null
+  , desconto_cupom numeric(18,2) not null
+  , acrescimo_cupom numeric(18,2) not null
 
-  , preco_unitario numeric(18,4) not null
-  , custo_unitario numeric(18,4) not null
-  , desconto_unitario numeric(18,4) not null
-  , acrescimo_unitario numeric(18,4) not null
+  , preco_unitario numeric(18,2) not null
+  , custo_unitario numeric(18,2) not null
+  , desconto_unitario numeric(18,2) not null
+  , acrescimo_unitario numeric(18,2) not null
 
-  , quantidade numeric(18,4) not null
-  , total_bruto numeric(18,4) not null
-  , total_liquido numeric(18,4) not null
+  , quantidade numeric(18,2) not null
+  , total_bruto numeric(18,2) not null
+  , total_liquido numeric(18,2) not null
 
-  , valor_desconto numeric(18,4) not null
-  , valor_acrescimo numeric(18,4) not null
-  , valor_icms numeric(18,4) not null
+  , valor_desconto numeric(18,2) not null
+  , valor_acrescimo numeric(18,2) not null
+  , valor_icms numeric(18,2) not null
 );

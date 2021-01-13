@@ -1,20 +1,16 @@
-
+use DBmercadologic
 
 -- PARTE 1: ELENCANDO O HISTORICO QUE SERÁ PROCESSADO
 declare @tb_replica table (id_replica bigint)
 
 insert into @tb_replica
-select 
-       top 10 -- APENAS PARA TESTES
-       id_replica
+select id_replica
   from replica.historico_venda_item
  where not exists (
     select * from replica.status_historico_venda_item
      where status_historico_venda_item.id_replica = historico_venda_item.id_replica
-   -- limites do teste
-     --and data_cupom > '2021-01-07'
-     --and id_cupom = 1542757
  )
+
 
 -- PARTE 2: AGRUPANDO A VENDA E REGISTRANDO NA TABELA DE VENDA
 ; with
@@ -23,11 +19,11 @@ venda_crua as (
        , id_item as DFcod_item_estoque
        , id_unidade as DFcod_unidade
        , cod_empresa as DFcod_empresa
-       , cast(data_cupom as date) as DFdata_venda
+       , data_movimento as DFdata_venda
        , quantidade as DFquantidade_vendida
-       , total_com_desconto as DFvalor_venda
+       , total_liquido as DFvalor_venda
        , (custo_unitario * quantidade) as DFcusto_venda
-       , 0 /* rever */ as DFvalor_icms
+       , valor_icms as DFvalor_icms
        , 0 /* rever */ as DFvalor_pis
        , 0 /* rever */ as DFvalor_cofins
        , 0 /* rever */ as DFvalor_encargos

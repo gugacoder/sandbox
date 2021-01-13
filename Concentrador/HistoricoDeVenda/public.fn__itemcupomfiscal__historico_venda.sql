@@ -96,8 +96,8 @@ begin
     , itemcupomfiscal.totalliquido as total_liquido
 
     , itemcupomfiscal.totaldesconto as valor_desconto
-    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 4) as valor_acrescimo
-    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 4) as valor_icms
+    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 2) as valor_acrescimo
+    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 2) as valor_icms
     from old_table as itemcupomfiscal
     inner join item
             on item.id = itemcupomfiscal.iditem
@@ -197,8 +197,8 @@ begin
     , itemcupomfiscal.totalliquido as total_liquido
 
     , itemcupomfiscal.totaldesconto as valor_desconto
-    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 4) as valor_acrescimo
-    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 4) as valor_icms
+    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 2) as valor_acrescimo
+    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 2) as valor_icms
     from new_table as itemcupomfiscal
     inner join item
             on item.id = itemcupomfiscal.iditem
@@ -334,8 +334,8 @@ begin
     , itemcupomfiscal.totalliquido as total_liquido
 
     , itemcupomfiscal.totaldesconto as valor_desconto
-    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 4) as valor_acrescimo
-    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 4) as valor_icms
+    , round(itemcupomfiscal.quantidade * itemcupomfiscal.acrescimo, 2) as valor_acrescimo
+    , round(itemcupomfiscal.totalliquido * (1::numeric - round(item.percentual_reducao / 100::numeric, 4)) * round(aliquota.percentual / 100::numeric, 4), 2) as valor_icms
     from (
       select 'D' as tp_operacao, 0 as seq_operacao, * from old_table
       union
