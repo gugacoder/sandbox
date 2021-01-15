@@ -13,6 +13,6 @@ if object_id('rascunho.TBvenda_diaria') is null begin
 		DFvalor_encargos decimal(18, 6) not null,
 		DFestoque_atualizado bit not null,
 		DFvalor_desconto decimal(18, 4) not null,
-		DFcusto_contabil_venda decimal(18, 4) NULL
+		DFcusto_contabil_venda decimal(18, 4) null
 	)
 end

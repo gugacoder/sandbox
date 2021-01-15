@@ -10,32 +10,35 @@ create procedure mlogic.importar_itens_vendidos (
   -- Importa para a base do DIRECTOR os itens vendidos nos PDVs e pendentes de importação.
   -- 
 begin
-
-  --
-  -- COLECTANDO PARAMETROS
-  --
-  declare @encargos decimal(18,4) = 0
-
-  select @encargos = replace(replace(DFvalor,'.',''),',','.')
-    from TBopcoes with (nolock)
-   where DFcodigo = 551;
-
-  --
-  -- ELENCANDO O HISTORICO QUE SERÁ PROCESSADO
-  --
   declare @tb_ids_replica table (id_replica bigint)
+  declare @data_status datetime = current_timestamp
 
-  insert into @tb_ids_replica
-  select id_replica
-    from mlogic.vw_replica_historico_venda_item
-   where (@cod_empresa is null or cod_empresa = @cod_empresa)
-     and not exists (
-      select 1 from mlogic.vw_status_historico_venda_item
-       where id_replica = vw_replica_historico_venda_item.id_replica
-   )
+  declare @encargos decimal(18,4) = (
+    select replace(replace(DFvalor,'.',''),',','.')
+      from TBopcoes with (nolock)
+     where DFcodigo = 551
+  )
 
   begin try
     begin transaction tx
+
+    --
+    -- ELENCANDO O HISTORICO QUE SERÁ PROCESSADO
+    --
+    insert into mlogic.vw_status_historico_venda_item (id_replica, tipo_status, data_status)
+    output inserted.id_replica into @tb_ids_replica
+    select id_replica
+         , 'E' as tipo_status -- E: Estoque Atualizado
+         , data_status = @data_status
+      from mlogic.vw_replica_historico_venda_item
+     where (@cod_empresa is null or cod_empresa = @cod_empresa)
+       and not exists (
+              select 1 from mlogic.vw_status_historico_venda_item with (nolock)
+               where id_replica = vw_replica_historico_venda_item.id_replica)
+       and exists (
+              select 1 from TBunidade_item_estoque with (nolock)
+               where DFcod_item_estoque = vw_replica_historico_venda_item.id_item
+                 and DFcod_unidade = vw_replica_historico_venda_item.id_unidade)
 
     --
     -- AGRUPANDO A VENDA E REGISTRANDO NA TABELA DE VENDA
@@ -116,17 +119,6 @@ begin
            DFid_unidade_item_estoque
          , DFcod_empresa
          , DFdata_venda
-
-    --
-    -- MARCANDO O HISTÓRICO DE VENDA DO ITEM COMO BAIXADO NO ESTOQUE
-    --
-    declare @data_status datetime = current_timestamp
-
-    insert into mlogic.vw_status_historico_venda_item (id_replica, tipo_status, data_status)
-    select id_replica
-         , 'E' as tipo_status -- E: Estoque Atualizado
-         , data_status = @data_status
-     from @tb_ids_replica
      
     commit transaction tx
   end try

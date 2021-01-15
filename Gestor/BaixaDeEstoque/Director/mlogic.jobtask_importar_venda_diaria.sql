@@ -1,9 +1,9 @@
 --
--- PROCEDURE mlogic.jobtask_replicar_mercadologic
+-- PROCEDURE mlogic.jobtask_importar_venda_diaria
 --
-drop procedure if exists mlogic.jobtask_replicar_mercadologic
+drop procedure if exists mlogic.jobtask_importar_venda_diaria
 go
-create procedure mlogic.jobtask_replicar_mercadologic
+create procedure mlogic.jobtask_importar_venda_diaria
   @command varchar(10),
   @cod_empresa int = null
 as
@@ -36,16 +36,17 @@ begin
       --    64  sábado
       -- Portanto, todos os dias é: 127
       @days=127,
-      @time='00:00:02',
-      @repeat=1,  -- repetir a cada X horas
-      @delayed=1, -- após a execução anterior
+      @time='03:00:00', -- intervalo
+      @repeat=1,        -- repetir a cada intervalo
+      @delayed=1,       -- após a execução anterior
       @args=@args,
-      @description='JOB de replicação de tabelas da empresa {@cod_empresa}'
+      @description='JOB de baixa automática da venda diária da empresa {@cod_empresa}'
 
   end if @command = 'exec' begin
 
     begin try
-      exec mlogic.replicar_mercadologic @cod_empresa=@cod_empresa
+      exec mlogic.importar_itens_vendidos @cod_empresa=@cod_empresa
+      exec mlogic.baixar_estoque_itens_vendidos @cod_empresa=@cod_empresa
     end try begin catch
       declare @message nvarchar(max) = concat(error_message(),' (linha ',error_line(),')')
       raiserror (@message,10,1) with nowait
