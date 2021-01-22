@@ -1,7 +1,9 @@
 drop procedure if exists processar_venda_periodica__gerar_venda_periodica
 go
 create procedure processar_venda_periodica__gerar_venda_periodica (
-    @cod_empresa int = null
+    @cod_empresa int
+  , @id_usuario int
+  , @id_formulario int
 ) as
   --
   --  Sumariza e salva a venda peródica dos itens a partir dos dados
@@ -29,8 +31,12 @@ begin
     select id_replica
          , 'E' as tipo_status -- E: Estoque Atualizado
          , data_status = @data_status
-      from replica.historico_venda_item
+      from replica.historico_venda_item with (nolock)
      where (@cod_empresa is null or cod_empresa = @cod_empresa)
+       and exists (
+             select 1 from dbo.vw_empresa_venda_periodica
+              where DFcod_empresa = historico_venda_item.cod_empresa
+                and DFvenda_periodica_ativada = 1)
        and not exists (
               select 1 from replica.status_historico_venda_item with (nolock)
                where id_replica = replica.historico_venda_item.id_replica)
@@ -96,9 +102,8 @@ begin
       , DFvalor_pis
       , DFvalor_cofins
       , DFvalor_encargos
-      , DFestoque_atualizado
       , DFvalor_desconto
-      , DFcusto_contabil_venda
+      , DFestoque_atualizado
     )
     select DFid_unidade_item_estoque
          , DFcod_empresa
@@ -110,9 +115,8 @@ begin
          , sum(DFvalor_pis) as DFvalor_pis
          , sum(DFvalor_cofins) as DFvalor_cofins
          , sum(DFvalor_encargos) as DFvalor_encargos
-         , 0 as DFestoque_atualizado
          , 0 as DFvalor_desconto
-         , null as DFcusto_contabil_venda
+         , 0 as DFestoque_atualizado
       from venda
      group by
            DFid_unidade_item_estoque
@@ -133,7 +137,6 @@ begin
   end catch
 
 end
-
 go
 
-exec processar_venda_periodica__gerar_venda_periodica 100
+-- exec processar_venda_periodica__gerar_venda_periodica 7, 1, null
