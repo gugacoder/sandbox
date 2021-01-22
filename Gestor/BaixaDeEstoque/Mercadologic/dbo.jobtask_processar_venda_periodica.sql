@@ -1,16 +1,30 @@
---
--- PROCEDURE mlogic.jobtask_replicar_mercadologic
---
-drop procedure if exists mlogic.jobtask_replicar_mercadologic
+drop procedure if exists jobtask_processar_venda_periodica
 go
-create procedure mlogic.jobtask_replicar_mercadologic
+create procedure jobtask_processar_venda_periodica
+  --  Comando repassado pelo executor do JOB
+  --  - init
+  --      Ordem emitida pelo executor do JOB para a inicialização do JOB.
+  --      É esperado que a procedure faça o agendamento do JOB da forma
+  --      mais apropriada invocando a procedure `host.do_schedule_job`.
+  --    
+  --  - exec
+  --      Ordem emitida pelo executor do JOB para a execução do JOB.
+  --      É esperado que a procedure realize o processamento efetivamente.
   @command varchar(10),
+  --  Código da empresa.
+  --  Existe apenas durante a execução do JOB (@command='exec').
   @cod_empresa int = null
 as
+  --
+  --  JOB de processamento e baixa periódica da venda replicada dos PDVs.
+  --
 begin
 
   if @command = 'init' begin
     -- Agendando este JOB por empresa.
+    -- Depois de agendado o executor do JOB irá executar esta procedure com
+    -- os parâmetros `@command='exec'` e @cod_empresa preenchido com o código
+    -- de cada empresa agendada.
 
     declare @data datetime = current_timestamp
     declare @args host.tp_parameter
@@ -40,7 +54,7 @@ begin
       --      Fins de semana some sábado e domingo, portanto: 65;
       @days=127,
       --  Hora ou intervalo de execução, dependendo da configuração do parâmetro @repeat.
-      @time='00:00:02',
+      @time='03:00:00', 
       --  Determina como a hora configurada em @time deve ser interpretada:
       --      Quando `0` a hora corresponde à hora do dia em que o JOB deve ser executado.
       --          Por exemplo, se @time vale `12:00:00` então o JOB é executado sempre
@@ -57,12 +71,12 @@ begin
       --  Quanto @repeat vale 0 este parâmetro é desconsiderado.
       @delayed=1,
       @args=@args,
-      @description='JOB de replicação de tabelas da empresa {@cod_empresa}'
+      @description='JOB de baixa automática da venda periódica da empresa {@cod_empresa}'
 
   end if @command = 'exec' begin
 
     begin try
-      exec mlogic.replicar_mercadologic @cod_empresa=@cod_empresa
+      exec processar_venda_periodica @cod_empresa
     end try begin catch
       declare @message nvarchar(max) = concat(error_message(),' (linha ',error_line(),')')
       raiserror (@message,10,1) with nowait
