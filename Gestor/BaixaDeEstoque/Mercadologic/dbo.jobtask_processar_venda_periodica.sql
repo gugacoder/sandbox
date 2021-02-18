@@ -1,6 +1,6 @@
-drop procedure if exists jobtask_processar_venda_periodica
+drop procedure if exists dbo.jobtask_processar_venda_periodica
 go
-create procedure jobtask_processar_venda_periodica
+create procedure dbo.jobtask_processar_venda_periodica
   --  Comando repassado pelo executor do JOB
   --  - init
   --      Ordem emitida pelo executor do JOB para a inicialização do JOB.
@@ -32,7 +32,7 @@ begin
     -- Criando um lote de parametros para cada empresa.
     insert into @args (lot, name, value)
     select DFcod_empresa, '@cod_empresa', DFcod_empresa
-      from TBempresa
+      from director.TBempresa
      where DFdata_inativacao is null
     
     -- Criando um JOB para cada lote de parametros.

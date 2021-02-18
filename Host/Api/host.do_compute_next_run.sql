@@ -150,9 +150,11 @@ begin
       )
       select top 1 @due_date = [times].[time]
         from [times]
-       inner join @date_table as [date_table]
-               on [date_table].[date] = cast([times].[time] as date)
        where [times].[time] >= current_timestamp
+         and exists (
+              select 1 from @date_table as [date_table]
+               where [date] = cast([times].[time] as date)
+         )
       option (maxrecursion 0)
 
     end else begin

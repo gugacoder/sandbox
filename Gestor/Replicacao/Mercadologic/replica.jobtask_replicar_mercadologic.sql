@@ -1,9 +1,9 @@
 --
--- PROCEDURE mlogic.jobtask_replicar_mercadologic
+-- PROCEDURE replica.jobtask_replicar_mercadologic
 --
-drop procedure if exists mlogic.jobtask_replicar_mercadologic
+drop procedure if exists replica.jobtask_replicar_mercadologic
 go
-create procedure mlogic.jobtask_replicar_mercadologic
+create procedure replica.jobtask_replicar_mercadologic
   @command varchar(10),
   @cod_empresa int = null
 as
@@ -18,7 +18,7 @@ begin
     -- Criando um lote de parametros para cada empresa.
     insert into @args (lot, name, value)
     select DFcod_empresa, '@cod_empresa', DFcod_empresa
-      from TBempresa
+      from director.TBempresa with (nolock)
      where DFdata_inativacao is null
     
     -- Criando um JOB para cada lote de parametros.
@@ -62,7 +62,7 @@ begin
   end if @command = 'exec' begin
 
     begin try
-      exec mlogic.replicar_mercadologic @cod_empresa=@cod_empresa
+      exec replica.replicar_mercadologic @cod_empresa=@cod_empresa
     end try begin catch
       declare @message nvarchar(max) = concat(error_message(),' (linha ',error_line(),')')
       raiserror (@message,10,1) with nowait

@@ -1,3 +1,5 @@
+-- drop view director.TBhistorico_estoque
+-- drop view director.TBvenda_diaria 
 
 if object_id('director.TBhistorico_estoque') is null begin
   create table director.TBhistorico_estoque (
