@@ -1,0 +1,6 @@
+﻿# Arquivo de propriedades do módulo.
+
+# Nome da conexão de banco de dados.
+# O Migrant agrupa os módulos que compartilham uma mesma conexão.
+# Se omitido o nome da conexão será "Director"
+connection.name=Mercadologic

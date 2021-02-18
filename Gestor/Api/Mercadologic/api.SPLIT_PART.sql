@@ -1,9 +1,9 @@
 --
--- FUNCTION replica.SPLIT_PART
+-- FUNCTION api.SPLIT_PART
 --
-drop function if exists replica.SPLIT_PART
+drop function if exists api.SPLIT_PART
 go
-create function replica.SPLIT_PART(
+create function api.SPLIT_PART(
     @string nvarchar(max)
   , @delimitador nvarchar(max)
   , @posicao_do_termo_desejado int)
@@ -27,10 +27,10 @@ begin
     if @posicao = @posicao_do_termo_desejado
       return @termo
 
-    set @string = right(@string, len(@string) - @indice - len(@delimitador) + 1)
-    if len(@string) = 0
+    if api.LEN(@string) = 0
       break
 
+    set @string = right(@string, api.LEN(@string) - @indice - api.LEN(@delimitador) + 1)
     set @posicao = @posicao + 1
   end
   return null

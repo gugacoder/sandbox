@@ -24,10 +24,10 @@ begin
     if @position = @wanted_position
       return @term
 
-    set @string = right(@string, len(@string) - @index - len(@delimiter) + 1)
     if len(@string) = 0
       break
 
+    set @string = right(@string, len(@string) - @index - len(@delimiter) + 1)
     set @position = @position + 1
   end
   return null

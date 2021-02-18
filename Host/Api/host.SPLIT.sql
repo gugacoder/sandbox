@@ -22,9 +22,10 @@ begin
     
     insert into @terms ([value]) values (@term)
 
-    set @string = right(@string, len(@string) - @index - len(@delimiter) + 1)
-    if len(@string) = 0
+    if host.LEN(@string) = 0
       break
+      
+    set @string = right(@string, host.LEN(@string) - @index - host.LEN(@delimiter) + 1)
   end
   return
 end

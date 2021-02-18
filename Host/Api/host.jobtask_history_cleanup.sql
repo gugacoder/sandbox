@@ -28,7 +28,7 @@ begin
       --      Fins de semana some sábado e domingo, portanto: 65;
       @days=127,
       --  Hora ou intervalo de execução, dependendo da configuração do parâmetro @repeat.
-      @time='00:00:02',
+      @time='00:01:00',
       --  Determina como a hora configurada em @time deve ser interpretada:
       --      Quando `0` a hora corresponde à hora do dia em que o JOB deve ser executado.
       --          Por exemplo, se @time vale `12:00:00` então o JOB é executado sempre

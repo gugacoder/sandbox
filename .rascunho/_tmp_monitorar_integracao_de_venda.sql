@@ -100,7 +100,7 @@ begin
 
   -- Elencando as empresas
   if @cod_empresas is not null
-    insert into @tb_empresa select valor from replica.SPLIT(@cod_empresas,',')
+    insert into @tb_empresa select valor from api.SPLIT(@cod_empresas,',')
   else
     insert into @tb_empresa select DFcod_empresa from replica.vw_empresa
 

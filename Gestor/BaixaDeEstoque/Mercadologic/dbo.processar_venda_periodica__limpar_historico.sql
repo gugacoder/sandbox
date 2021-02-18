@@ -18,6 +18,14 @@ begin
     -- Por enquanto estamos mantendo 6 meses.
     declare @data_historica datetime = dateadd(d, -6*30, current_timestamp)
 
+    -- Ajustando a data histórica.
+    -- Deve existir um histórico de pelo menos 24 horas porque o algoritmo
+    -- depende dessa informação para ajustar o intervalo de execução.
+    if @data_historica > dateadd(hh, -24, current_timestamp) begin
+      set @data_historica = dateadd(hh, -24, current_timestamp)
+    end
+
+    -- Limpando venda periodica
     delete from TBvenda_periodica
      where (@cod_empresa is null or DFcod_empresa = @cod_empresa)
        and DFdata_venda < @data_historica
@@ -25,7 +33,11 @@ begin
              select 1 from dbo.vw_empresa_venda_periodica
               where DFcod_empresa = TBvenda_periodica.DFcod_empresa
                 and DFvenda_periodica_ativada = 1)
-     
+    
+    -- Limpando auditoria
+    delete from TBvenda_periodica_auditoria
+     where DFdata_execucao < @data_historica
+      
     commit transaction tx
   end try
   begin catch

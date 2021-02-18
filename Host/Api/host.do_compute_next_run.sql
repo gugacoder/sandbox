@@ -134,7 +134,7 @@ begin
     if @delayed = 1 begin
 
       -- Próxima data depois da última execução acrescida do atraso
-      select @due_date = coalesce(max([end_date]) + @time, current_timestamp)
+      select @due_date = coalesce(max([end_date]) + cast(@time as datetime), current_timestamp)
         from [host].[job_history]
        where [job_id] = @job_id
 
@@ -146,7 +146,7 @@ begin
       ; with [times] as (
         select @start_date as [time]
         union all
-        select [time] + @time from [times] -- calculando hora recursivamente
+        select [time] + cast(@time as datetime) from [times] -- calculando hora recursivamente
       )
       select top 1 @due_date = [times].[time]
         from [times]
@@ -159,7 +159,7 @@ begin
 
       -- Próxima data na hora marcada
       select @due_date = min([date])
-        from (select cast([date] as datetime) + @time from @date_table) as t([date])
+        from (select cast([date] as datetime) + cast(@time as datetime) from @date_table) as t([date])
        where [date] >= current_timestamp
 
     

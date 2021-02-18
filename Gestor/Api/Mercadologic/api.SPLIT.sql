@@ -1,9 +1,9 @@
 --
--- FUNCTION replica.SPLIT
+-- FUNCTION api.SPLIT
 --
-drop function if exists replica.SPLIT  
+drop function if exists api.SPLIT  
 go
-create function replica.SPLIT(
+create function api.SPLIT(
     @string nvarchar(max)
   , @delimitador nvarchar(max)
   )
@@ -25,9 +25,10 @@ begin
     
     insert into @termos ([valor]) values (@termo)
 
-    set @string = right(@string, len(@string) - @indice - len(@delimitador) + 1)
-    if len(@string) = 0
+    if api.LEN(@string) = 0
       break
+      
+    set @string = right(@string, api.LEN(@string) - @indice - api.LEN(@delimitador) + 1)
   end
   return
 end

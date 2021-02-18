@@ -26,8 +26,8 @@ select sys.objects.name
  order by sys.objects.type, sys.objects.name
 
 
-drop function if exists replica.SPLIT
-drop function if exists replica.SPLIT_PART
+drop function if exists api.SPLIT
+drop function if exists api.SPLIT_PART
 drop procedure if exists replica.clonar_tabela_mercadologic
 drop procedure if exists replica.clonar_tabelas_monitoradas_mercadologic
 drop procedure if exists replica.executar_sql_remota

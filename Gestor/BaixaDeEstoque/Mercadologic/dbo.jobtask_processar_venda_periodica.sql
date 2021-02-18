@@ -54,7 +54,7 @@ begin
       --      Fins de semana some sábado e domingo, portanto: 65;
       @days=127,
       --  Hora ou intervalo de execução, dependendo da configuração do parâmetro @repeat.
-      @time='03:00:00', 
+      @time='00:01:00', 
       --  Determina como a hora configurada em @time deve ser interpretada:
       --      Quando `0` a hora corresponde à hora do dia em que o JOB deve ser executado.
       --          Por exemplo, se @time vale `12:00:00` então o JOB é executado sempre
@@ -76,7 +76,7 @@ begin
   end if @command = 'exec' begin
 
     begin try
-      exec processar_venda_periodica @cod_empresa
+      exec processar_venda_periodica @cod_empresa, @honrar_agendamento=1
     end try begin catch
       declare @message nvarchar(max) = concat(error_message(),' (linha ',error_line(),')')
       raiserror (@message,10,1) with nowait
