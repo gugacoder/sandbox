@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# killall <nome> — encontra todos os processos com esse nome e mata pelo PID.
+# Não para no primeiro erro. Só imprime as falhas (silencioso se tudo der certo).
+if [ -z "$1" ]; then
+  echo "uso: killall <nome-do-processo>   (ex: killall node)" >&2
+  exit 1
+fi
+
+name="${1%.exe}.exe"
+self=$(cat /proc/$$/winpid 2>/dev/null)
+
+pids=$(tasklist.exe //FO CSV //NH //FI "IMAGENAME eq $name" 2>/dev/null \
+  | tr -d '\r' | grep -i "^\"$name\"" | cut -d'"' -f4 | grep -vx "$self")
+
+if [ -z "$pids" ]; then
+  echo "nenhum processo '$name' encontrado" >&2
+  exit 1
+fi
+
+# processo ainda existe? (se já sumiu — ex: filho que morreu junto com o pai — não é falha)
+alive() { tasklist.exe //FO CSV //NH //FI "PID eq $1" 2>/dev/null | grep -q "\"$1\""; }
+
+total=0
+failed=0
+for pid in $pids; do
+  total=$((total + 1))
+  if ! err=$(taskkill.exe //F //PID "$pid" 2>&1) && alive "$pid"; then
+    echo "falhou: $name (PID $pid) — $(echo "$err" | tr -d '\r' | tail -n1)" >&2
+    failed=$((failed + 1))
+  fi
+done
+
+if [ "$failed" -gt 0 ]; then
+  echo "$failed de $total falharam" >&2
+  exit 1
+fi
